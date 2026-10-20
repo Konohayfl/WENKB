@@ -228,7 +228,7 @@
 
 ## 5. 当前工作区状态
 
-2026-10-20 将测试成绩书工作副本归档至 `outputs/wenkb-test-book-in-progress/`，生成脚本共置于其 `scripts/` 子目录；原始微信附件未修改。当前工作簿保持“未执行”，工作簿内容和最终版式复核按阶段交接要求暂停。本轮归档文件、文档和测试已提交到 Git，具体提交见下方维护记录。
+2026-10-20 将测试成绩书工作副本归档至 `outputs/wenkb-test-book-in-progress/`，生成脚本共置于其 `scripts/` 子目录；原始微信附件未修改。当前工作簿保持“未执行”，工作簿内容和最终版式复核按阶段交接要求暂停。归档文件、文档和测试已提交到 Git，提交号为 `357ce7a`。
 
 2026-10-01 在提交 `ff96d5c` 基础上，将概要设计模板、模块结构图生成脚本和模块结构图统一归档至 `outputs/architecture-design-deliverables/`；需求跟踪矩阵仍位于 `outputs/rtm-maintenance-final/`。根目录临时 `resources/` 运行目录已清理，后端运行数据仍保留在 `wenkb-server/resources/`。模型权重、数据库、上传资料及其他运行数据均未纳入提交。
 
@@ -301,7 +301,7 @@ python -m unittest tests.test_rtm_workbook
 
 本节集中保存原记录在 `AGENTS.md` 中的全部维护条目，并持续追加新的维护、审查和验证记录。条目按时间倒序排列；详细实现状态见“已完成工作”，后续行动见“当前未完成事项”。
 
-- 2026-10-20：暂停测试成绩书内容与版式完善，将执行前草案和生成脚本整理到 `outputs/wenkb-test-book-in-progress/`，新增 [测试成绩书阶段交接](test_scorebook_handoff.md)、导航链接及 `tests/test_test_scorebook_handoff.py`。专项测试 5 项、全量 Python 测试 53 项通过；原始微信附件未修改。Git commit 见本记录的后续更新。
+- 2026-10-20：暂停测试成绩书内容与版式完善，将执行前草案和生成脚本整理到 `outputs/wenkb-test-book-in-progress/`，新增 [测试成绩书阶段交接](test_scorebook_handoff.md)、导航链接及 `tests/test_test_scorebook_handoff.py`。专项测试 5 项、全量 Python 测试 53 项通过；原始微信附件未修改。Git commit：`357ce7a`。
 
 - 2026-10-01：补充模块详细概述所需的 8 张独立模块结构图，覆盖模型配置、知识库管理、数据集管理、索引构建、问答与检索、增强生成、搜索、文档与编排模块；统一采用“输入/触发—模块核心处理—数据与外部依赖”版式，原交付物已统一归档到 `outputs/architecture-design-deliverables/`，其中包含概要设计模板、`scripts/` 生成脚本和 `images/` 图片。同步更新生成脚本、专项测试和 README 目录说明，专项测试覆盖交付物共置关系、图片数量、尺寸、300 DPI 和输出目录。
 
