@@ -6,7 +6,7 @@
 
 ## 1. 目的与范围
 
-本指南用于补齐测试成绩书“运行”页的 S01 至 S06 实际运行截图。48 条核心用例和可自动执行的运行检查已由自动化测试完成；本指南不要求重复执行这些用例，也不能据截图将项目整体标记为通过。
+本指南用于补齐测试成绩书“运行”页的 S01 至 S06 实际运行截图。48 条核心用例曾在 2026-10-20 执行，结果为 18 通过、8 失败、22 阻塞；8 条失败的隔离 API 自动回归结果见失败跟踪文档。本指南不要求重复执行核心用例，也不能据截图将项目整体标记为通过。
 
 原示例工作簿中的运行截图属于其他项目，不能作为 WenKB 证据。本指南要求截图来自本次实际启动的 WenKB 页面或健康检查响应，并在“运行”页 S01 至 S06 区域逐项粘贴。
 
@@ -48,11 +48,32 @@ Write-Host "隔离后端目录：$runServer"
 
 ## 4. 启动并检查服务
 
+受保护 API 现在需要有效 HS256 JWT。隔离手工测试需在后端进程中设置测试专用 `WENKB_JWT_SECRET`（至少 32 字节），并使用同一密钥生成短期测试用户 token；不要使用生产密钥。当前后端尚未实现前端所调用的登录/注册接口，因此可在浏览器开发者工具 Console 中仅为本地隔离环境写入 `token` 和 `info` 两个 localStorage 项后刷新页面：
+
+```javascript
+localStorage.setItem('token', '<隔离测试用户 JWT>')
+localStorage.setItem('info', JSON.stringify({ id: 'scorebook-test-user', name: 'scorebook-test-user' }))
+location.reload()
+```
+
+在用于生成测试凭证的 PowerShell 窗口中设置与服务完全相同的密钥，并从隔离后端目录运行以下命令：
+
+```powershell
+$repoRoot = 'E:\111学习\4.1大四上\校内实习\wenkb-main'
+$env:WENKB_JWT_SECRET = '<与服务窗口完全相同的至少32字节临时密钥>'
+Set-Location '<隔离后端目录>'
+$testToken = (& "$repoRoot\.venv\Scripts\python.exe" -c "from server.utils.jwtutils import generate_token; print(generate_token({'id': 'scorebook-test-user', 'name': 'scorebook-test-user'}))").Trim()
+Write-Host $testToken
+```
+
+将生成值作为上方 Console 命令中的 `<隔离测试用户 JWT>`。不要将 token 或密钥放入截图、工作簿或 Git。
+
 在一个新的 PowerShell 窗口中，将 `<隔离后端目录>` 替换成上一节显示的完整目录：
 
 ```powershell
 $repoRoot = 'E:\111学习\4.1大四上\校内实习\wenkb-main'
 Set-Location '<隔离后端目录>'
+$env:WENKB_JWT_SECRET = '<与隔离认证测试相同的至少32字节临时密钥>'
 & "$repoRoot\.venv\Scripts\python.exe" -m uvicorn app:app --host 127.0.0.1 --port 16088
 ```
 

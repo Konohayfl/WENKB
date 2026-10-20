@@ -47,6 +47,8 @@ class OperationGuideTest(unittest.TestCase):
             "引用来源",
             "局域网部署",
             "文档转入知识库",
+            "WENKB_JWT_SECRET",
+            "有效 JWT",
         ]
         for item in required_terms:
             self.assertIn(item, text)

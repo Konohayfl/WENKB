@@ -11,7 +11,7 @@ from datetime import datetime
 from server.utils.websocketutils import WebsocketManager
 from server.core.knb.DatasetService import DatasetService
 from server.exception.exception import BaseBusiException
-from server.utils.httputils import get_webpage_title
+from server.utils.httputils import get_webpage_title, is_valid_http_url
 
 class DatasetApi(BaseApi):
   datasetService = DatasetService()
@@ -132,12 +132,13 @@ class DatasetApi(BaseApi):
       require_repository_access(reposId, request, owner=True)
       if (links is None or len(links) == 0):
         raise BaseBusiException('链接列表不能为空')
+      for link in links:
+        if not is_valid_http_url(link.get('url')):
+          raise BaseBusiException('链接必须是有效的 HTTP 或 HTTPS URL', error_code='4001', status_code=400)
       datasets = []
       for link in links:
         dtsetId = self.getPk()
         url = link.get('url', None)
-        if (url is None):
-          continue
         title = link.get('title', url)
         dataset = Dataset(
           dtsetId = dtsetId,
@@ -165,6 +166,8 @@ class DatasetApi(BaseApi):
     # 获取连接标题
     @app.post('/knb/dataset/links/title')
     def getLinksTitle(links: list[str]):
+      if any(not is_valid_http_url(link) for link in links):
+        raise BaseBusiException('链接必须是有效的 HTTP 或 HTTPS URL', error_code='4001', status_code=400)
       titles = {}
       for link in links:
         title = get_webpage_title(link)

@@ -24,6 +24,11 @@ class ServerBootstrapTest(unittest.TestCase):
         app_path = root / "wenkb-server" / "app.py"
         namespace = runpy.run_path(str(app_path), run_name="wenkb_server_app_test")
         self.assertIn("app", namespace)
+        dispatchers = [
+            middleware.kwargs.get("dispatch")
+            for middleware in namespace["app"].user_middleware
+        ]
+        self.assertIn(namespace["request_identity_middleware"], dispatchers)
 
     def test_logger_creates_log_dir(self):
         root = Path(__file__).resolve().parents[1]

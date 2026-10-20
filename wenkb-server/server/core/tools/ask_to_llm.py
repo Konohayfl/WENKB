@@ -96,6 +96,15 @@ def get_question_prompts_and_sources(reposId: str, question: str, setting: Repos
   prompts = generate_llm_prompts(question, related_docs_with_score)
   return prompts, sources
 
+def persist_chat_message(chatMesg: ChatMesgEntity, content: str):
+  with session_scope() as session:
+    orm = session.get(ChatMesg, chatMesg.mesgId)
+    if orm is None:
+      orm = ChatMesg().copy_from_dict(vars(chatMesg))
+      orm.crtTm = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    orm.mesgCntnt = content
+    session.merge(orm)
+
 # 发送引用数据
 async def send_ws_quote_message(chatMesg:ChatMesgEntity, sources:list, manager: WebsocketManager, token: str = None):
   sources = sources or []
@@ -141,6 +150,7 @@ def ask_to_llm_stream(setting: ReposSettingEntity, chatMesg: ChatMesgEntity, que
     logger.error(e)
     yield message_error_to_json(str(e))
     yield message_chunk_to_json(fallback_message)
+    persist_chat_message(chatMesg, fallback_message)
     return fallback_message
   if (len(chatHistory) > 0):
     chatHistory = chatHistory[:setting.maxHist]
@@ -164,6 +174,7 @@ def ask_to_llm_stream(setting: ReposSettingEntity, chatMesg: ChatMesgEntity, que
       logger.error(e)
       yield message_error_to_json(str(e))
       yield message_chunk_to_json(fallback_message)
+      persist_chat_message(chatMesg, fallback_message)
       return fallback_message
   prompts, sources = None, None
   try:
@@ -172,6 +183,7 @@ def ask_to_llm_stream(setting: ReposSettingEntity, chatMesg: ChatMesgEntity, que
     logger.error(e)
     yield message_error_to_json(str(e))
     yield message_chunk_to_json(fallback_message)
+    persist_chat_message(chatMesg, fallback_message)
     return fallback_message
   message = ''
   if (prompts is None):
@@ -192,12 +204,5 @@ def ask_to_llm_stream(setting: ReposSettingEntity, chatMesg: ChatMesgEntity, que
   sources = sources or []
   save_message_quotes(chatMesg=chatMesg, sources=sources)
   yield message_quote_to_json(mesgId=chatMesg.mesgId, chatId=chatMesg.chatId, reposId=chatMesg.reposId, quotes=sources)
-  mesgId = chatMesg.mesgId
-  with session_scope() as session:
-    orm = session.get(ChatMesg, mesgId)
-    if (orm is None):
-      orm = ChatMesg().copy_from_dict(vars(chatMesg))
-      orm.crtTm = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    orm.mesgCntnt = message
-    session.merge(orm)
+  persist_chat_message(chatMesg, message)
   return message

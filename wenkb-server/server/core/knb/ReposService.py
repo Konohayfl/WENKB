@@ -1,5 +1,11 @@
 import json
+import os
+import shutil
+import tempfile
 import uuid
+from pathlib import Path
+from config.common import DATASET_UPLOAD_FILE_DIR
+from logger import logger
 from server.db.DbManager import session_scope
 from langchain_core.documents import Document
 from sqlalchemy import delete, select
@@ -48,29 +54,84 @@ class ReposService():
       return result
 
   def remove_repository_by_id(self, reposId: str):
-    # 先删除向量集合，失败时保留关系库数据，方便整体重试。
-    vector_delete_collection(reposId)
-    with session_scope() as session:
+    upload_root = Path(DATASET_UPLOAD_FILE_DIR).resolve()
+    with session_scope(True) as session:
       repository = session.get(ReposInfo, reposId)
-      if repository is None:
-        return
-      session.execute(delete(ChatMesgQuote).where(ChatMesgQuote.reposId == reposId))
-      session.execute(delete(ChatMesg).where(ChatMesg.reposId == reposId))
-      session.execute(delete(ChatInfo).where(ChatInfo.reposId == reposId))
-      session.execute(delete(SrchHist).where(SrchHist.reposId == reposId))
-      session.execute(delete(ReposQuest).where(ReposQuest.reposId == reposId))
-      dataset_ids = session.scalars(
-        select(Dataset.dtsetId).where(Dataset.reposId == reposId)
+      stored_files = [] if repository is None else session.execute(
+        select(Dataset.filePath, Dataset.fileTyp).where(Dataset.reposId == reposId)
       ).all()
-      if dataset_ids:
-        session.execute(delete(DatasetIndexError).where(DatasetIndexError.dtsetId.in_(dataset_ids)))
-        session.execute(delete(DatasetChunk).where(DatasetChunk.dtsetId.in_(dataset_ids)))
-        session.execute(delete(DatasetPrecis).where(DatasetPrecis.dtsetId.in_(dataset_ids)))
-        session.execute(delete(DatasetTriplet).where(DatasetTriplet.dtsetId.in_(dataset_ids)))
-      session.execute(delete(Dataset).where(Dataset.reposId == reposId))
-      session.execute(delete(DatasetCtlg).where(DatasetCtlg.reposId == reposId))
-      session.execute(delete(ReposSetting).where(ReposSetting.reposId == reposId))
-      session.delete(repository)
+    if repository is None:
+      vector_delete_collection(reposId)
+      return
+
+    files = set()
+    for file_path, file_type in stored_files:
+      if not file_path or file_type == 'link':
+        continue
+      source = Path(file_path)
+      if source.is_symlink():
+        continue
+      if not source.is_absolute():
+        source = Path.cwd() / source
+      source = source.resolve()
+      if source.is_relative_to(upload_root) and source.is_file():
+        files.add(source)
+
+    stage_dir = None
+    staged_files = []
+    if files:
+      stage_dir = Path(tempfile.mkdtemp(prefix=f'.{reposId}.delete-', dir=upload_root))
+      try:
+        for source in sorted(files):
+          staged = stage_dir / source.relative_to(upload_root)
+          staged.parent.mkdir(parents=True, exist_ok=True)
+          os.replace(source, staged)
+          staged_files.append((source, staged))
+      except Exception:
+        self._restore_staged_files(stage_dir, staged_files)
+        raise
+
+    try:
+      # Keep relation rows and uploaded files recoverable if vector deletion fails.
+      vector_delete_collection(reposId)
+      with session_scope() as session:
+        repository = session.get(ReposInfo, reposId)
+        if repository is None:
+          raise RuntimeError(f'知识库 {reposId} 已在删除过程中消失')
+        session.execute(delete(ChatMesgQuote).where(ChatMesgQuote.reposId == reposId))
+        session.execute(delete(ChatMesg).where(ChatMesg.reposId == reposId))
+        session.execute(delete(ChatInfo).where(ChatInfo.reposId == reposId))
+        session.execute(delete(SrchHist).where(SrchHist.reposId == reposId))
+        session.execute(delete(ReposQuest).where(ReposQuest.reposId == reposId))
+        dataset_ids = session.scalars(
+          select(Dataset.dtsetId).where(Dataset.reposId == reposId)
+        ).all()
+        if dataset_ids:
+          session.execute(delete(DatasetIndexError).where(DatasetIndexError.dtsetId.in_(dataset_ids)))
+          session.execute(delete(DatasetChunk).where(DatasetChunk.dtsetId.in_(dataset_ids)))
+          session.execute(delete(DatasetPrecis).where(DatasetPrecis.dtsetId.in_(dataset_ids)))
+          session.execute(delete(DatasetTriplet).where(DatasetTriplet.dtsetId.in_(dataset_ids)))
+        session.execute(delete(Dataset).where(Dataset.reposId == reposId))
+        session.execute(delete(DatasetCtlg).where(DatasetCtlg.reposId == reposId))
+        session.execute(delete(ReposSetting).where(ReposSetting.reposId == reposId))
+        session.delete(repository)
+    except Exception:
+      if stage_dir is not None:
+        self._restore_staged_files(stage_dir, staged_files)
+      raise
+
+    if stage_dir is not None:
+      try:
+        shutil.rmtree(stage_dir)
+      except OSError as error:
+        logger.error(f'知识库文件清理失败，暂存目录 {stage_dir}: {error}')
+
+  def _restore_staged_files(self, stage_dir: Path, staged_files: list):
+    for original, staged in reversed(staged_files):
+      if staged.exists():
+        original.parent.mkdir(parents=True, exist_ok=True)
+        os.replace(staged, original)
+    shutil.rmtree(stage_dir, ignore_errors=True)
   
   def add_repos_quest(self, reposQuest: ReposQuestEntity):
     reposQuest.qstId = str(uuid.uuid4()).replace('-', '')

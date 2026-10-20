@@ -43,6 +43,8 @@ class ReadmeTest(unittest.TestCase):
             "cd wenkb-server",
             "cd wenkb-client",
             "npm run dev",
+            "WENKB_JWT_SECRET",
+            "HS256 JWT",
         ]
         for item in required_values:
             self.assertIn(item, text)

@@ -9,7 +9,7 @@ if SERVER_DIR not in sys.path:
   sys.path.insert(0, SERVER_DIR)
 
 import uvicorn
-from fastapi import FastAPI, Request, APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, APIRouter, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 from logger import logger
 from server.api.sys.FileApi import FileApi
@@ -24,6 +24,7 @@ from contextlib import asynccontextmanager
 from server.core.scheduler.Scheduler import datasetToVectorQueueJob, datasetEnhanceQueueJob
 from server.utils.websocketutils import WebsocketManager
 from server.exception.exception import golbal_exception_handlers, global_exceptions_middleware
+from server.utils.authmiddleware import identity_from_token, request_identity_middleware
 from config.common import DEFAULT_STATIC_DIR_NAME, DEFAULT_DOCUMENT_DIR_NAME
 
 from server.db.DbUpgrade import upgrade_db
@@ -58,6 +59,11 @@ DocsetInfoApi(app)
 
 @router.websocket('/ws/knb/{client_id}')
 async def websocket_serve(client_id: str, websocket: WebSocket):
+  identity = identity_from_token(client_id)
+  if identity is None:
+    await websocket.close(code=1008)
+    return
+  websocket.state.user = identity
   # 1、客户端、服务端建立 ws 连接
   await websocket.accept()
   manager.connect(client_id, websocket)
@@ -78,11 +84,7 @@ async def websocket_serve(client_id: str, websocket: WebSocket):
 
 app.include_router(router)
 
-@app.middleware('http')
-async def add_request_header_middleware(request: Request, call_next):
-  request.state.user = {'id': 'client_default_user', 'name': 'client_default_user'}
-  # 获取请求头并存储在响应中，供后续处理使用
-  return await call_next(request)
+app.middleware('http')(request_identity_middleware)
 
 @app.get('/')
 def repositoryList():

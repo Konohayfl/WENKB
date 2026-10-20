@@ -130,6 +130,8 @@ class TestScorebookHandoffTest(unittest.TestCase):
             "A100:I106",
             "48 条",
             "API Key",
+            "WENKB_JWT_SECRET",
+            "scorebook-test-user",
         ):
             self.assertIn(required, text)
 
@@ -182,6 +184,17 @@ class TestScorebookHandoffTest(unittest.TestCase):
             },
             pending,
         )
+
+    def test_failure_retest_results_and_remaining_blockers_are_explicit(self):
+        text = FOLLOWUP_PATH.read_text(encoding="utf-8")
+        for required in (
+            "2.1 2026-10-21 修复与回归",
+            "tests.test_failed_execution_regressions",
+            "11 项通过",
+            "WENKB_JWT_SECRET",
+            "22 条阻塞仍依赖真实 LLM",
+        ):
+            self.assertIn(required, text)
 
 
 if __name__ == "__main__":

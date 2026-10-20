@@ -281,6 +281,22 @@ class CodeMaintenanceTest(unittest.TestCase):
         self.assertIn("torch==2.3.1", requirements)
         self.assertIn("fsspec==2024.6.1", requirements)
 
+    def test_handoff_records_failure_fixes_and_authentication_prerequisite(self):
+        root = Path(__file__).resolve().parents[1]
+        text = (root / "docs" / "code_maintenance_handoff.md").read_text(
+            encoding="utf-8"
+        )
+
+        for required in (
+            "DEF-WKB-001 至 DEF-WKB-005 已修复",
+            "tests.test_failed_execution_regressions",
+            "70 项全量 Python 测试通过",
+            "WENKB_JWT_SECRET",
+            "WebSocket 拒绝无效凭证",
+            "22 项阻塞",
+        ):
+            self.assertIn(required, text)
+
 
 if __name__ == "__main__":
     unittest.main()

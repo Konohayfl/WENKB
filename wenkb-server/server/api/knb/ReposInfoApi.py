@@ -87,11 +87,17 @@ class ReposInfoApi(BaseApi):
     @app.post('/knb/repository')
     def addRepository(reposInfo: ReposInfoEntity, request: Request):
       # reposId='' reposNm='123456' reposDesc='' reposIcon=None crtUser=None authRang=None
+      if reposInfo.reposNm is None or not reposInfo.reposNm.strip():
+        raise BaseBusiException('知识库名称不能为空', error_code='4001', status_code=400)
       if reposInfo.vecModlId is None or reposInfo.vecModlId == '':
         raise BaseBusiException('请选择构建索引的模型', error_code='4001', status_code=400)
+      userId = self.getUserId(request=request)
+      if userId is None:
+        raise BaseBusiException('请先登录后再创建知识库', error_code='4001', status_code=401)
+      reposInfo.reposNm = reposInfo.reposNm.strip()
       reposInfo.reposId = self.getPk()
       reposInfo.crtTm = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-      reposInfo.crtUser = self.getUserId(request=request)
+      reposInfo.crtUser = userId
       if (reposInfo.reposTyp is None):
         reposInfo.reposTyp = 'nml' # 知识库类型：nml 通用知识库，tbl 表格知识库
       if (reposInfo.authRang is None):

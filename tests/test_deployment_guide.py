@@ -37,6 +37,8 @@ class DeploymentGuideTest(unittest.TestCase):
             "局域网",
             "访问控制",
             "共享存储",
+            "WENKB_JWT_SECRET",
+            "HS256 JWT",
         ]
         for item in required_terms:
             self.assertIn(item, text)
