@@ -52,6 +52,7 @@ npm run dev
 - [开发者与用户手册](docs/wenkb_operation_guide.md)
 - [部署运维](docs/deployment_guide.md)
 - [测试计划](docs/test_plan.md)
+- [测试成绩书手动运行与截图指南](docs/test_scorebook_manual_run.md)
 - [变更管理](docs/change_management.md)
 - [代码维护交接](docs/code_maintenance_handoff.md)
 

@@ -166,7 +166,7 @@ function buildCover(sheet) {
     ["编制说明", null, null, null, null, null, null],
     ["本成绩书依据需求分析、详细设计、接口设计、操作手册和测试计划整理。执行结果不得预填；每条用例执行后应补充实测结果、状态、日期、测试者和证据。", null, null, null, null, null, null],
     ["工作表说明", null, null, null, null, null, null],
-    ["测试项目：核心测试用例；UI界面：页面与流程验收映射；运行：执行汇总、状态判定与缺陷记录。", null, null, null, null, null, null],
+    ["测试项目：核心测试用例；UI界面：页面与流程验收映射；运行：执行汇总、缺陷记录和实际运行截图留白。", null, null, null, null, null, null],
     ["来源：docs/test_plan.md、docs/requirements_analysis.md、docs/detailed_design.md、docs/api_design.md、docs/wenkb_operation_guide.md", null, null, null, null, null, null],
   ];
   sheet.mergeCells("A21:G21");
@@ -272,8 +272,8 @@ function buildUiMap(sheet) {
 }
 
 function buildRunSummary(sheet) {
-  applyBase(sheet, "A1:H34");
-  styleTitle(sheet, "A1:H1", "测试执行汇总与缺陷记录");
+  applyBase(sheet, "A1:I106");
+  styleTitle(sheet, "A1:I1", "测试执行汇总与缺陷记录");
   sheet.getRange("A3:B7").values = [
     ["测试对象", "第14小组 基于大模型的个人知识库系统"],
     ["测试基线", "docs/test_plan.md v0.1（2026-09-03）"],
@@ -314,8 +314,9 @@ function buildRunSummary(sheet) {
   sheet.getRange("B19").format.horizontalAlignment = "center";
   sheet.getRange("A21:H21").values = [["执行要求", null, null, null, null, null, null, null]];
   sheet.mergeCells("A21:H21");
+  sheet.getRange("A21").values = [["执行要求"]];
   sheet.getRange("A21:H21").format = { fill: colors.navy, font: { name: font, size: 10, bold: true, color: colors.white }, verticalAlignment: "center" };
-  sheet.getRange("A21:H25").values = [
+  sheet.getRange("A22:H26").values = [
     ["1", "每轮测试前填写执行版本、环境和数据基线。", null, null, null, null, null, null],
     ["2", "每条用例执行后填写实测结果、确定结果、日期、测试者和证据。", null, null, null, null, null, null],
     ["3", "失败或阻塞用例必须关联缺陷编号、日志或截图，并在回归后补充结论。", null, null, null, null, null, null],
@@ -333,7 +334,85 @@ function buildRunSummary(sheet) {
   sheet.getRange("C30:C34").dataValidation = { rule: { type: "list", values: ["高", "中", "低"] } };
   sheet.getRange("G30:G34").format.numberFormat = "yyyy-mm-dd";
   sheet.getRange("A30:G34").format.rowHeight = 25;
-  setWidths(sheet, { A: 18, B: 56, C: 15, D: 38, E: 28, F: 14, G: 14, H: 14 }, 34);
+  sheet.getRange("A36:I36").values = [["项目实际运行情况（待人工执行）", null, null, null, null, null, null, null, null]];
+  sheet.mergeCells("A36:I36");
+  sheet.getRange("A36:I36").format = { fill: colors.navy, font: { name: font, size: 10, bold: true, color: colors.white }, verticalAlignment: "center" };
+  sheet.getRange("A37:I37").values = [["依据 docs/test_scorebook_manual_run.md 在隔离副本中手动运行并粘贴截图。本区仅记录运行冒烟证据，不替代 48 条用例执行，也不改变交付判定。", null, null, null, null, null, null, null, null]];
+  sheet.mergeCells("A37:I37");
+  sheet.getRange("A37:I37").format = { fill: colors.amber, font: { name: font, size: 9, color: colors.ink }, wrapText: true, verticalAlignment: "center", borders: { preset: "all", style: "thin", color: colors.border } };
+  sheet.getRange("A37:I37").format.rowHeight = 34;
+
+  sheet.getRange("A39:I39").values = [["运行环境记录", null, null, null, null, null, null, null, null]];
+  sheet.mergeCells("A39:I39");
+  sheet.getRange("A39:I39").format = { fill: colors.blue, font: { name: font, size: 10, bold: true, color: colors.navy }, verticalAlignment: "center" };
+  sheet.getRange("A40:I42").values = [
+    ["项目版本", "", "", "", "Git 提交", "", "", "执行人", ""],
+    ["操作系统", "", "", "", "浏览器", "", "", "执行日期", null],
+    ["后端入口", "http://127.0.0.1:16088/health", "", "", "前端入口", "http://127.0.0.1:11420", "", "数据库", "隔离副本"],
+  ];
+  for (const row of [40, 41, 42]) {
+    sheet.mergeCells(`B${row}:D${row}`);
+    sheet.mergeCells(`F${row}:G${row}`);
+  }
+  sheet.getRange("A40:I42").format = { fill: colors.blueLight, font: { name: font, size: 9, color: colors.ink }, wrapText: true, verticalAlignment: "center", borders: { preset: "all", style: "thin", color: colors.border } };
+  for (const column of ["A", "E", "H"]) sheet.getRange(`${column}40:${column}42`).format.font = { name: font, size: 9, bold: true, color: colors.navy };
+  sheet.getRange("I41").format.numberFormat = "yyyy-mm-dd";
+  sheet.getRange("A40:I42").format.rowHeight = 28;
+
+  sheet.getRange("A44:I44").values = [["运行证据清单", null, null, null, null, null, null, null, null]];
+  sheet.mergeCells("A44:I44");
+  sheet.getRange("A44:I44").format = { fill: colors.blue, font: { name: font, size: 10, bold: true, color: colors.navy }, verticalAlignment: "center" };
+  sheet.getRange("A45:I45").values = [["编号", "运行场景", null, "核验要点", null, "执行结果", "执行日期", "执行者", "截图编号/文件名"]];
+  sheet.mergeCells("B45:C45");
+  sheet.mergeCells("D45:E45");
+  styleHeader(sheet.getRange("A45:I45"));
+  const runtimeChecks = [
+    ["S01", "后端启动与健康检查", "本地后端可启动；/health 返回成功且 data.status、data.database 均为 ok。", "S01-health.png"],
+    ["S02", "前端入口与导航", "浏览器工作区可加载，知识库、搜索、聊天和文档集入口可见。", "S02-workspace.png"],
+    ["S03", "模型设置页", "模型设置页可打开；截图不暴露密钥。未配置模型时如实记录。", "S03-model-settings.png"],
+    ["S04", "知识库列表与详情", "知识库页面可用；如创建测试知识库，只在隔离副本中执行。", "S04-repository.png"],
+    ["S05", "测试资料导入与状态", "样例文件上传后可查看数据集和真实索引状态，不将失败或未就绪写成成功。", "S05-dataset.png"],
+    ["S06", "搜索/问答与引用（模型可用时）", "模型和索引可用时核对命中内容及来源；依赖缺失时记录阻塞原因。", "S06-search-chat.png"],
+  ].map(([id, scenario, expected, fileName]) => [id, scenario, null, expected, null, "待人工执行", null, "", fileName]);
+  sheet.getRange("A46:I51").values = runtimeChecks;
+  for (const row of [46, 47, 48, 49, 50, 51]) {
+    sheet.mergeCells(`B${row}:C${row}`);
+    sheet.mergeCells(`D${row}:E${row}`);
+  }
+  styleBody(sheet.getRange("A46:I51"));
+  sheet.getRange("A46:A51").format.horizontalAlignment = "center";
+  sheet.getRange("F46:F51").format = { fill: colors.amber, font: { name: font, size: 9, bold: true, color: colors.ink }, horizontalAlignment: "center", verticalAlignment: "center", borders: { preset: "all", style: "thin", color: colors.border } };
+  sheet.getRange("F46:F51").dataValidation = { rule: { type: "list", values: ["待人工执行", "通过", "失败", "阻塞", "不适用"] } };
+  sheet.getRange("G46:G51").format.numberFormat = "yyyy-mm-dd";
+  sheet.getRange("A46:I51").format.rowHeight = 48;
+  const runtimeStatus = sheet.getRange("F46:F51");
+  runtimeStatus.conditionalFormats.add("containsText", { text: "通过", format: { fill: colors.green, font: { bold: true, color: "#375623" } } });
+  runtimeStatus.conditionalFormats.add("containsText", { text: "失败", format: { fill: colors.red, font: { bold: true, color: "#9C0006" } } });
+  runtimeStatus.conditionalFormats.add("containsText", { text: "阻塞", format: { fill: colors.amber, font: { bold: true, color: "#9C6500" } } });
+
+  sheet.getRange("A53:I53").values = [["运行界面截图（完成对应步骤后粘贴；当前为空白证据位）", null, null, null, null, null, null, null, null]];
+  sheet.mergeCells("A53:I53");
+  sheet.getRange("A53:I53").format = { fill: colors.navy, font: { name: font, size: 10, bold: true, color: colors.white }, verticalAlignment: "center" };
+  const screenshotSlots = [
+    ["S01", "后端健康检查响应"],
+    ["S02", "WenKB 浏览器工作区与主导航"],
+    ["S03", "模型设置页面（凭据已脱敏或未配置）"],
+    ["S04", "隔离测试知识库列表或详情"],
+    ["S05", "测试资料导入结果与数据集状态"],
+    ["S06", "搜索/问答结果及引用；模型不可用时改贴阻塞现象"],
+  ];
+  screenshotSlots.forEach(([id, label], index) => {
+    const titleRow = 54 + index * 9;
+    const areaStart = titleRow + 1;
+    const areaEnd = titleRow + 7;
+    sheet.getRange(`A${titleRow}:I${titleRow}`).values = [[id, label, null, null, null, null, null, null, null]];
+    sheet.mergeCells(`B${titleRow}:I${titleRow}`);
+    sheet.getRange(`A${titleRow}:I${titleRow}`).format = { fill: colors.blueLight, font: { name: font, size: 9, bold: true, color: colors.navy }, verticalAlignment: "center", borders: { preset: "all", style: "thin", color: colors.border } };
+    sheet.getRange(`A${areaStart}`).values = [[`待粘贴 ${id} 实际截图`]];
+    sheet.getRange(`A${areaStart}:I${areaEnd}`).format = { fill: colors.white, font: { name: font, size: 9, color: colors.muted }, horizontalAlignment: "center", verticalAlignment: "center", borders: { preset: "outside", style: "thin", color: colors.border } };
+    sheet.getRange(`A${areaStart}:I${areaEnd}`).format.rowHeight = 22;
+  });
+  setWidths(sheet, { A: 18, B: 56, C: 15, D: 38, E: 28, F: 14, G: 14, H: 14, I: 24 }, 106);
   sheet.freezePanes.freezeRows(9);
   const table = sheet.tables.add("A29:G34", true, "WenkbDefectTable");
   table.style = "TableStyleMedium2";

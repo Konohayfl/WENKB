@@ -29,6 +29,7 @@ class ReadmeTest(unittest.TestCase):
             "docs/wenkb_operation_guide.md",
             "docs/deployment_guide.md",
             "docs/test_plan.md",
+            "docs/test_scorebook_manual_run.md",
             "docs/change_management.md",
             "docs/code_maintenance_handoff.md",
         ]

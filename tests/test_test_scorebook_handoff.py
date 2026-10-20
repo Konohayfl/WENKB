@@ -12,6 +12,8 @@ WORKBOOK_PATH = (
 )
 BUILDER_PATH = OUTPUT_DIR / "scripts" / "build_wenkb_test_book.mjs"
 HANDOFF_PATH = ROOT / "docs" / "test_scorebook_handoff.md"
+MANUAL_GUIDE_PATH = ROOT / "docs" / "test_scorebook_manual_run.md"
+EVIDENCE_README_PATH = OUTPUT_DIR / "evidence" / "README.md"
 
 
 class TestScorebookHandoffTest(unittest.TestCase):
@@ -24,6 +26,8 @@ class TestScorebookHandoffTest(unittest.TestCase):
         self.assertTrue(WORKBOOK_PATH.is_file())
         self.assertTrue(BUILDER_PATH.is_file())
         self.assertTrue(HANDOFF_PATH.is_file())
+        self.assertTrue(MANUAL_GUIDE_PATH.is_file())
+        self.assertTrue(EVIDENCE_README_PATH.is_file())
         self.assertFalse((ROOT / "outputs" / "wenkb-test-book-final").exists())
         self.assertFalse(
             WORKBOOK_PATH.with_suffix(WORKBOOK_PATH.suffix + ".inspect.ndjson").exists()
@@ -74,6 +78,36 @@ class TestScorebookHandoffTest(unittest.TestCase):
         self.assertEqual("待执行", calculated["B17"].value)
         self.assertEqual("未完成：请先执行全部用例", calculated["B19"].value)
 
+    def test_runtime_evidence_is_separate_and_waits_for_manual_execution(self):
+        run = self.workbook["运行"]
+        self.assertEqual("执行要求", run["A21"].value)
+        self.assertEqual("项目实际运行情况（待人工执行）", run["A36"].value)
+        self.assertEqual("运行证据清单", run["A44"].value)
+        self.assertEqual("运行界面截图（完成对应步骤后粘贴；当前为空白证据位）", run["A53"].value)
+        self.assertEqual([f"S{index:02d}" for index in range(1, 7)], [run.cell(row, 1).value for row in range(46, 52)])
+        self.assertEqual(["待人工执行"] * 6, [run.cell(row, 6).value for row in range(46, 52)])
+        self.assertEqual("S01-health.png", run["I46"].value)
+        self.assertEqual("S06-search-chat.png", run["I51"].value)
+        self.assertEqual("待粘贴 S01 实际截图", run["A55"].value)
+        self.assertEqual("待粘贴 S06 实际截图", run["A100"].value)
+        self.assertEqual(48, self.calculated_workbook["运行"]["B10"].value)
+        self.assertEqual(48, self.calculated_workbook["运行"]["B14"].value)
+
+    def test_manual_run_guide_protects_existing_data_and_defines_screenshots(self):
+        text = MANUAL_GUIDE_PATH.read_text(encoding="utf-8")
+        for required in (
+            "隔离副本",
+            "resources",
+            "16088",
+            "11420",
+            "/health",
+            "S01",
+            "S06",
+            "48 条",
+            "API Key",
+        ):
+            self.assertIn(required, text)
+
     def test_handoff_document_describes_scope_and_resume_checks(self):
         text = HANDOFF_PATH.read_text(encoding="utf-8")
         for required in (
@@ -83,6 +117,8 @@ class TestScorebookHandoffTest(unittest.TestCase):
             "视觉复核",
             "48 条用例",
             "没有执行任何 WenKB 产品功能测试",
+            "项目实际运行情况",
+            "test_scorebook_manual_run.md",
         ):
             self.assertIn(required, text)
 

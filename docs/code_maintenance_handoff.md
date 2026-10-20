@@ -1,8 +1,8 @@
 # WenKB 代码维护交接记录
 
-版本：v1.4
+版本：v1.5
 日期：2026-10-20
-状态：测试成绩书已归档为进行中产物，内容与版式完善暂停
+状态：测试成绩书运行证据区与手动运行指南已就绪，产品运行和核心用例待人工验证
 
 ## 1. 交接目的
 
@@ -213,7 +213,14 @@
 - 将工作簿归档至 `outputs/wenkb-test-book-in-progress/`，将生成脚本放在同目录的 `scripts/` 下，并清除生成用检查转储；原始微信附件未修改。
 - 新增 `docs/test_scorebook_handoff.md` 记录已有成果、验证范围、暂停边界和恢复步骤，并更新 `AGENTS.md` 文档导航。
 - 新增 `tests/test_test_scorebook_handoff.py` 检查归档结构、工作表、TP 覆盖、未执行状态、空执行字段和汇总公式。
-- 尚未完成四张工作表的最终视觉复核、导出后复查、Excel 原生交互验证及 WenKB 功能测试；这些工作保留在阶段交接文件中。
+- 归档当时尚未完成四张工作表的最终视觉复核、导出后复查、Excel 原生交互验证及 WenKB 功能测试；后续视觉复核已在 3.25 记录，原生交互和产品功能测试仍待人工完成。
+
+### 3.25 测试成绩书实际运行证据与手动指南
+
+- 按原示例末尾的实际运行截图结构，在“运行”页追加环境记录、S01 至 S06 核验清单和截图粘贴区域；默认均为“待人工执行”，且不参与 48 条核心用例汇总。
+- 新增 `docs/test_scorebook_manual_run.md`，指导在排除 `wenkb-server/resources` 的临时后端副本中运行，检查 `/health`、启动浏览器端并获取脱敏截图。
+- 新增 `outputs/wenkb-test-book-in-progress/evidence/README.md` 说明截图归档命名；更新 README、AGENTS 导航、阶段交接和专项测试。
+- 本轮未启动 WenKB，也未修改现有数据库或采用原始示例截图；实际运行、截图和 Excel 原生图片交互仍待人工完成。
 
 ## 4. 当前未完成事项
 
@@ -224,11 +231,11 @@
 - 中：补充数据库外键、级联删除或等效一致性机制，避免仅依赖应用层清理产生孤儿数据。
 - 中：调整队列线程的启动生命周期，避免模块导入时启动后台线程，并增加接口级和业务流程级测试。
 - 低：关闭默认 SQL 回显，补充依赖安全扫描、前端 lint/test 脚本和大体积 chunk 的构建治理。
-- 中：继续完成测试成绩书用例复核、四张工作表视觉验收和汇总联动验证；工作簿当前仍是执行前草案，详见 [测试成绩书阶段交接](test_scorebook_handoff.md)。
+- 中：等待人工按 [手动运行与截图指南](test_scorebook_manual_run.md) 获取 S01 至 S06 真实运行证据，再依据测试计划执行 48 条核心用例并验证 Excel 原生图片/交互行为；工作簿仍是执行前记录模板，详见 [测试成绩书阶段交接](test_scorebook_handoff.md)。
 
 ## 5. 当前工作区状态
 
-2026-10-20 将测试成绩书工作副本归档至 `outputs/wenkb-test-book-in-progress/`，生成脚本共置于其 `scripts/` 子目录；原始微信附件未修改。当前工作簿保持“未执行”，工作簿内容和最终版式复核按阶段交接要求暂停。归档文件、文档和测试已提交到 Git，提交号为 `357ce7a`。
+2026-10-20 测试成绩书工作副本位于 `outputs/wenkb-test-book-in-progress/`，生成脚本共置于 `scripts/` 子目录。现已补充运行证据区和手动隔离运行指南；S01 至 S06 仍待人工执行，48 条核心用例均保持“未执行”。本轮未启动当前后端或修改现有数据库，原始微信附件及其中的其他项目截图均未修改或复用。历史归档提交号为 `357ce7a`。
 
 2026-10-01 在提交 `ff96d5c` 基础上，将概要设计模板、模块结构图生成脚本和模块结构图统一归档至 `outputs/architecture-design-deliverables/`；需求跟踪矩阵仍位于 `outputs/rtm-maintenance-final/`。根目录临时 `resources/` 运行目录已清理，后端运行数据仍保留在 `wenkb-server/resources/`。模型权重、数据库、上传资料及其他运行数据均未纳入提交。
 
@@ -246,6 +253,17 @@
 ```
 
 结果为专项测试 5 项、全量 Python 测试 53 项通过。专项测试核对工作簿四张工作表、48 条用例、TP-001 至 TP-012 每项 4 条、全部“未执行”、执行字段留空及执行汇总公式和已保存值。生成脚本通过 Node.js `--check` 语法检查，`git diff --check` 未发现空白错误。此前初稿导出时 Artifact Tool 公式错误扫描为 0 个匹配；本轮没有重新渲染或在 Excel 原生应用中验证，因此不能视为最终视觉和原生行为验收。全量测试输出含有既有 SQLAlchemy 弃用提示及测试模拟异常日志，测试结果仍为通过。
+
+2026-10-20 测试成绩书运行证据区与手动运行指南：
+
+```powershell
+.venv\Scripts\python.exe -m unittest tests.test_test_scorebook_handoff tests.test_readme
+.venv\Scripts\python.exe -m unittest discover -s tests
+node --check outputs/wenkb-test-book-in-progress/scripts/build_wenkb_test_book.mjs
+git diff --check
+```
+
+专项测试 9 项、全量 Python 测试 55 项通过；生成脚本语法检查通过，`git diff --check` 无错误。Artifact Tool 公式错误扫描为 0 个匹配，四张工作表已渲染；运行页新增区域视觉检查通过。将导入工作簿的临时内存副本中一条核心用例状态改为“通过”后，汇总正确变为 47 条未执行、1 条通过，正式文件未被临时变更污染。尚未在 Excel 原生应用中实测粘贴图片，也未启动 WenKB 产品；手动启动、界面检查和 S01 至 S06 截图仍待执行。全量测试保留既有 SQLAlchemy 弃用提示及模拟异常日志，测试结果为通过。
 
 2026-09-14 需求跟踪矩阵回写：
 
@@ -291,8 +309,8 @@ python -m unittest tests.test_rtm_workbook
 
 ## 7. 下次恢复建议
 
-1. 恢复测试成绩书工作时，先阅读 [阶段交接文件](test_scorebook_handoff.md)，核对测试计划和设计基线，并运行 `git status --short`。
-2. 按交接文件完成用例范围复核、页面映射规则确认、四张工作表视觉检查和汇总公式状态联动验证；不要把“未执行”改写成测试结论。
+1. 继续测试成绩书工作时，先阅读 [阶段交接文件](test_scorebook_handoff.md) 和 [手动运行与截图指南](test_scorebook_manual_run.md)，核对测试计划和设计基线，并运行 `git status --short`。
+2. 先按手动指南在临时副本中完成运行冒烟与截图，再完成用例范围复核、页面映射规则确认、工作簿交互检查和汇总公式状态联动验证；不要把“未执行”改写成测试结论。
 3. 若继续补充其他项目文档，优先同步需求、设计、测试和运维文档之间的术语。
 4. 若继续做代码维护，再按交接记录中的优先级推进接口与失败路径补强。
 5. 每轮验证后更新本记录和对应测试，再按仓库规则提交 Git commit。
