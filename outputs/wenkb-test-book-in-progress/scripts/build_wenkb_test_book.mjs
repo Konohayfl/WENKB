@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { SpreadsheetFile, Workbook } from "@oai/artifact-tool";
+import { FileBlob, SpreadsheetFile, Workbook } from "@oai/artifact-tool";
 
 const root = process.cwd();
 const outputDir = path.join(root, "outputs", "wenkb-test-book-in-progress");
@@ -88,6 +88,69 @@ const testCases = [
   tc("TP-012", "NFR-003/NFR-005", "静态文档与测试基线一致性", "中", "测试计划、需求、设计、接口和操作手册均为当前审查版本。", "1. 核对 FR/TP 编号和功能范围。\n2. 核对状态术语、错误恢复、引用和删除规则。\n3. 检查测试用例执行字段未预填通过结论。", "文档范围、术语和状态规则一致；工作簿覆盖测试计划 TP-001 至 TP-012；未执行用例不显示为通过。", "记录发现的文档差异、责任文档和修订建议。"),
 ];
 
+const executionDate = new Date("2026-10-20T00:00:00Z");
+const tester = "自动化执行";
+const executionResults = [
+  ["通过", "GET /health 返回 HTTP 200；success=true、status=ok、database=ok。", "隔离后端 HTTP 响应。"],
+  ["阻塞", "Vite 入口和 /api/health 代理返回 HTTP 200；浏览器实际交互、后端断开反馈及 Tauri 入口未核验。", "Vite 开发服务器与 HTTP 响应；界面留待人工截图。"],
+  ["通过", "隔离数据库首次升至 schema v5；服务重启后仍为 v5，原测试数据保留。", "隔离 SQLite schema version 前后查询及启动日志。"],
+  ["阻塞", "API 保留中文文件名；本次服务数据目录为 ASCII 路径，未验证中文目录读写及索引。", "中文文件名上传记录；中文路径样本未执行。"],
+  ["通过", "供应商清单可读；测试模型可新增、列表读取并删除。", "模型配置 API 请求与临时记录清理。"],
+  ["通过", "使用虚构测试值验证加密保存和回读脱敏；未使用真实 API Key。", "参数 API 回读掩码；测试值未保留在隔离库之外。"],
+  ["阻塞", "没有真实 LLM 服务或专用凭据，未能验证切换默认模型后由指定模型实际完成调用。", "无模型服务；没有发起外部凭据调用。"],
+  ["失败", "未配置模型时 SSE 返回明确设置提示和兜底文本且未泄漏凭据；助手兜底消息未写入历史消息，见 DEF-WKB-005。", "隔离聊天 SSE 响应及消息列表 API。", "DEF-WKB-005"],
+  ["通过", "知识库创建成功；embedding 模型 ID 被保存，authRang 默认为 prvt，问答设置可重读。", "隔离知识库及设置 API。"],
+  ["失败", "缺少 embedding 模型会返回 HTTP 400；空知识库名称仍返回 HTTP 200 并创建记录，见 DEF-WKB-002。", "隔离知识库创建 API；空名称记录留在临时数据库。", "DEF-WKB-002"],
+  ["通过", "maxCtx、maxHist、temperature、similarity 和 topK 可保存并重读；设计基线没有定义合法数值边界，本次未判边界校验。", "隔离知识库设置 API。"],
+  ["通过", "将隔离测试数据临时设为 ready 后切换 embedding 返回 HTTP 409，原模型 ID 未变；测试状态已还原。", "隔离数据库状态变更和知识库编辑 API。"],
+  ["阻塞", "PDF、DOCX、MD、TXT、PPTX 上传入口接受样本；由于没有 embedding 权重，未验证有效文件解析和索引。占位二进制不作为格式通过证据。", "隔离上传 API；模型资源缺失。"],
+  ["通过", "同名文件两次上传获得不同 dtsetId，并分别写入不同文件路径。", "隔离数据集列表与文件路径查询。"],
+  ["失败", "格式错误值 not-a-valid-url 被 HTTP 200 接受并保存为链接数据集，见 DEF-WKB-003。", "隔离链接导入 API。", "DEF-WKB-003"],
+  ["阻塞", "损坏文件和不可访问链接未进入可判断的解析/索引流程；无法验证失败状态及其他正常数据集隔离。", "隔离环境无可用 embedding，未判解析结果。"],
+  ["通过", "停用数据集保持 new/une；启用的数据集进入索引队列并转为 error，证明停用项未入队。因本地 m3e 权重缺失未到 ready。", "隔离数据库的启用数据集状态及队列错误记录。"],
+  ["阻塞", "已观察启用数据集从 new 进入处理并因 embedding 不可用失败；未验证完整状态流转到 ready 或索引期间界面响应。", "异步队列状态；缺少本地 embedding 权重。"],
+  ["阻塞", "缺少本地 embedding 权重，无法生成 ready 向量并验证搜索/问答召回及来源。", "向量索引前置条件未满足。"],
+  ["阻塞", "索引失败由缺失 embedding 权重触发；无法修复模型前置条件后重试并验证错误清理。", "索引状态和错误记录；无可用模型资源。"],
+  ["阻塞", "自动摘要生成需要 ready 向量索引和 LLM 服务；本机未配置 LLM。", "模型/索引前置条件未满足。"],
+  ["阻塞", "人工摘要向量新增、修改和删除同步依赖可用向量模型；当前没有可加载 embedding 权重。", "模型/向量前置条件未满足。"],
+  ["阻塞", "自动 Q&A 生成依赖 LLM，人工维护后的向量同步依赖 embedding；相关服务未配置。", "LLM 与 embedding 前置条件未满足。"],
+  ["阻塞", "三元组抽取依赖 LLM；编辑和删除后的向量同步还依赖 embedding，均无法完成。", "LLM 与 embedding 前置条件未满足。"],
+  ["阻塞", "已验证对话记录可创建；两套 ready 知识库及成功模型问答前置条件不具备。", "隔离数据库无 ready 向量索引和 LLM。"],
+  ["阻塞", "未配置可控模型，无法验证正常流式响应及生成中断过程。", "没有可用或可控 LLM 服务。"],
+  ["阻塞", "多轮历史与上下文差异需要可观察的 LLM 调用；当前没有模型服务。", "没有可用 LLM 服务。"],
+  ["阻塞", "没有可检索向量内容和 LLM 回答，无法验证引用字段及历史引用快照。", "embedding 与 LLM 前置条件未满足。"],
+  ["阻塞", "没有可用向量集合，无法比较关键词、语义查询和 TopK/阈值变化。", "embedding 前置条件未满足。"],
+  ["阻塞", "没有索引搜索结果，无法核验来源卡片及实际页面跳转。", "向量索引和浏览器操作未完成。"],
+  ["阻塞", "搜索请求写入历史后因向量模型缺失返回 HTTP 500；历史删除不能替代完整的搜索结果和无结果 UI 验证。", "隔离搜索 API；模型异常响应和历史记录清理。"],
+  ["阻塞", "没有可用向量索引，无法比较 ready、未索引、停用数据集的真实搜索命中范围。", "embedding 前置条件未满足。"],
+  ["通过", "文档集和文档 API 创建成功；文档标题和正文修改后可重新读取。", "隔离文档集/文档 API。"],
+  ["通过", "修改正文后生成版本快照；直接核验隔离数据库中的版本行和正文。当前没有版本列表 API。", "隔离 SQLite 文档及版本行。"],
+  ["阻塞", "文档已生成关联数据集和 docVerId；索引、ready 状态和搜索命中因 embedding 不可用未验证。", "隔离文档转数据集 API；索引前置条件未满足。"],
+  ["通过", "删除文档集后其文档及版本均删除；另一个文档集中的无关文档保留。", "隔离 SQLite 删除前后对象计数。"],
+  ["阻塞", "独立数据集删除已移除关系记录和上传文件；本次没有派生向量和增强对象，无法证明完整关联清理。", "隔离数据集删除 API；没有向量对象。"],
+  ["失败", "删除知识库后数据集、对话、消息和搜索历史记录均已清理，但已上传文件仍留在磁盘，见 DEF-WKB-004。", "隔离 SQLite 关联记录及本地文件删除前后检查。", "DEF-WKB-004"],
+  ["通过", "删除目录后数据集仍存在，ctlgId 清空并回到未分类。", "隔离目录及数据集 API 回读。"],
+  ["阻塞", "没有向量索引，无法验证分段修改和删除后的向量同步。", "embedding 前置条件未满足。"],
+  ["失败", "不同 token 字符串仍可读取私有知识库；中间件将请求统一映射到 client_default_user，权限隔离失效，见 DEF-WKB-001。", "两个合成 token 的隔离知识库列表/详情请求。", "DEF-WKB-001"],
+  ["失败", "另一 token 可读取公开知识库且 optAuth 返回 alter，并可修改对象；未实现只读访问范围，见 DEF-WKB-001。", "公开知识库详情与编辑 API。", "DEF-WKB-001"],
+  ["失败", "使用另一 token 修改私有知识库名称成功，未被拒绝，见 DEF-WKB-001。", "两个合成 token 的隔离知识库编辑 API。", "DEF-WKB-001"],
+  ["失败", "使用另一 token 可按对象 ID 直接读取私有知识库，未被拒绝，见 DEF-WKB-001。", "两个合成 token 的隔离详情 API。", "DEF-WKB-001"],
+  ["阻塞", "没有可用模型和向量索引，无法完成导入、索引、增强、问答、搜索、引用和删除的端到端闭环。", "LLM 与 embedding 前置条件未满足。"],
+  ["阻塞", "关系记录可局部核验；没有向量集合，无法证明关系库、文件与向量库全链路一致。", "embedding 前置条件未满足。"],
+  ["阻塞", "HTTP/Vite 代理已验证；真实浏览器页面、Tauri 桌面端、窗口适配及截图留待人工检查。", "运行证据 S01-S06 待人工完成。"],
+  ["通过", "静态文档回归和工作簿覆盖检查通过；TP-001 至 TP-012 各 4 条，共 48 条。产品功能结论以本表逐条结果为准。", "Python 全量文档/成绩书测试及工作簿覆盖核验。"],
+];
+if (executionResults.length !== testCases.length) {
+  throw new Error(`Expected ${testCases.length} execution results, received ${executionResults.length}`);
+}
+const defects = [
+  ["DEF-WKB-001", "TC-WKB-041~044", "高", "请求中间件把不同 token 映射为同一 client_default_user；私有知识库可被其他 token 读取和修改，公开库也返回 alter。", "待修复；阻断多用户权限验收。", "待分配", ""],
+  ["DEF-WKB-002", "TC-WKB-010", "中", "知识库名称为空时，创建接口仍返回成功并保存空名称记录。", "待修复；增加名称校验并回归创建接口。", "待分配", ""],
+  ["DEF-WKB-003", "TC-WKB-015", "中", "链接导入接口接受 not-a-valid-url 并保存为数据集，未校验 URL 格式。", "待修复；增加格式校验并覆盖无效输入。", "待分配", ""],
+  ["DEF-WKB-004", "TC-WKB-038", "中", "删除知识库会清除数据库关联记录，但不会删除其本地上传文件。", "待修复；删除后核验本地文件及向量数据清理。", "待分配", ""],
+  ["DEF-WKB-005", "TC-WKB-008", "中", "LLM 客户端初始化失败时 SSE 发出兜底文本，但助手兜底消息未写入对话历史。", "待修复；失败回退后持久化最终消息并补充回归。", "待分配", ""],
+];
+
 function applyBase(sheet, range) {
   sheet.showGridLines = false;
   const used = sheet.getRange(range);
@@ -147,11 +210,11 @@ function buildCover(sheet) {
   sheet.getRange("A2:G3").values = [["文档编号：待编号", null, null, null, null, null, null], ["密级：待确认", null, null, null, null, null, null]];
   sheet.getRange("A2:G3").format.font = { name: font, size: 11, color: colors.ink };
   sheet.getRange("A14:B18").values = [
-    ["文档状态", "执行前草案"],
+    ["文档状态", "执行记录已回填，截图待人工补充"],
     ["测试基线", "测试计划 v0.1"],
     ["项目范围", "模型、知识库、数据集、索引、增强、问答、搜索、文档集"],
     ["编制日期", new Date("2026-10-20T00:00:00")],
-    ["执行状态", "未执行，待填写"],
+    ["执行状态", "14 通过，8 失败，26 阻塞；截图待人工补充"],
   ];
   sheet.getRange("A14:B18").format = {
     fill: colors.blueLight,
@@ -164,7 +227,7 @@ function buildCover(sheet) {
   sheet.getRange("B17").format.numberFormat = "yyyy-mm-dd";
   sheet.getRange("A21:G25").values = [
     ["编制说明", null, null, null, null, null, null],
-    ["本成绩书依据需求分析、详细设计、接口设计、操作手册和测试计划整理。执行结果不得预填；每条用例执行后应补充实测结果、状态、日期、测试者和证据。", null, null, null, null, null, null],
+    ["本成绩书依据需求分析、详细设计、接口设计、操作手册和测试计划整理。执行结果按实际记录；失败和阻塞项均保留现象、前置条件及缺陷编号。", null, null, null, null, null, null],
     ["工作表说明", null, null, null, null, null, null],
     ["测试项目：核心测试用例；UI界面：页面与流程验收映射；运行：执行汇总、缺陷记录和实际运行截图留白。", null, null, null, null, null, null],
     ["来源：docs/test_plan.md、docs/requirements_analysis.md、docs/detailed_design.md、docs/api_design.md、docs/wenkb_operation_guide.md", null, null, null, null, null, null],
@@ -199,12 +262,14 @@ function buildTestCases(sheet) {
   const dataRange = `A5:M${lastRow}`;
   applyBase(sheet, `A1:M${lastRow}`);
   styleTitle(sheet, "A1:M1", "WenKB 核心功能测试项目");
-  sheet.getRange("A2:M2").values = [["执行状态预置为“未执行”。请在执行后填写实测结果、确定结果、日期、测试者、缺陷编号和证据。", null, null, null, null, null, null, null, null, null, null, null, null]];
+  sheet.getRange("A2:M2").values = [["状态、实测结果、日期、测试者、缺陷编号和证据按实际执行情况记录；阻塞项需注明具体前置条件。", null, null, null, null, null, null, null, null, null, null, null, null]];
   sheet.mergeCells("A2:M2");
   sheet.getRange("A2:M2").format = { fill: colors.amber, font: { name: font, size: 10, color: colors.ink }, wrapText: true, verticalAlignment: "center" };
   sheet.getRange("A4:M4").values = [["用例编号", "需求/计划关联", "测试项", "优先级", "前置条件", "操作步骤", "预期结果", "实测结果", "确定结果", "测试日期", "测试者", "缺陷编号", "证据/备注"]];
   styleHeader(sheet.getRange("A4:M4"));
-  const rows = testCases.map((item, index) => [
+  const rows = testCases.map((item, index) => {
+    const execution = executionResults[index];
+    return [
     `TC-WKB-${String(index + 1).padStart(3, "0")}`,
     `${item.plan} / ${item.requirements}`,
     item.title,
@@ -212,13 +277,14 @@ function buildTestCases(sheet) {
     item.preconditions,
     `用例标题：${item.title}\n前置条件：${item.preconditions}\n操作步骤：${item.steps}`,
     item.expected,
-    "",
-    "未执行",
-    null,
-    "",
-    "",
-    item.notes,
-  ]);
+    execution[1],
+    execution[0],
+    executionDate,
+    tester,
+    execution[3] || "",
+    `${item.notes}\n执行证据：${execution[2]}`,
+  ];
+  });
   sheet.getRange(dataRange).values = rows;
   styleBody(sheet.getRange(dataRange));
   sheet.getRange(`A5:D${lastRow}`).format.horizontalAlignment = "center";
@@ -274,11 +340,12 @@ function buildUiMap(sheet) {
 function buildRunSummary(sheet) {
   applyBase(sheet, "A1:I106");
   styleTitle(sheet, "A1:I1", "测试执行汇总与缺陷记录");
+  const gitBaseline = "3951cd35be531084e7ebf2f40444d77bc6dff30c";
   sheet.getRange("A3:B7").values = [
     ["测试对象", "第14小组 基于大模型的个人知识库系统"],
     ["测试基线", "docs/test_plan.md v0.1（2026-09-03）"],
-    ["执行版本", "待填写"],
-    ["执行环境", "Windows 本地；浏览器或 Tauri；关系型数据库；向量检索环境；可访问模型服务"],
+    ["执行版本", `前端 0.1.9；后端基线 ${gitBaseline.slice(0, 12)}`],
+    ["执行环境", "Windows 11；隔离 SQLite schema v5；本地 LLM/embedding 未配置；API/Vite HTTP 验证"],
     ["测试数据", "PDF、DOCX、MD、TXT、PPT；有效/无效 URL；单轮/多轮问题；无结果查询；异常模型配置"],
   ];
   sheet.getRange("A3:B7").format = { fill: colors.blueLight, font: { name: font, size: 10, color: colors.ink }, wrapText: true, verticalAlignment: "center", borders: { preset: "all", style: "thin", color: colors.border } };
@@ -329,15 +396,15 @@ function buildRunSummary(sheet) {
   sheet.getRange("A22:H26").format.rowHeight = 26;
   sheet.getRange("A29:G29").values = [["缺陷编号", "关联用例", "严重级别", "问题描述", "处理结论", "责任人", "关闭日期"]];
   styleHeader(sheet.getRange("A29:G29"));
-  sheet.getRange("A30:G34").values = Array.from({ length: 5 }, () => ["", "", "", "", "", "", null]);
+  sheet.getRange("A30:G34").values = defects;
   styleBody(sheet.getRange("A30:G34"));
   sheet.getRange("C30:C34").dataValidation = { rule: { type: "list", values: ["高", "中", "低"] } };
   sheet.getRange("G30:G34").format.numberFormat = "yyyy-mm-dd";
-  sheet.getRange("A30:G34").format.rowHeight = 25;
-  sheet.getRange("A36:I36").values = [["项目实际运行情况（待人工执行）", null, null, null, null, null, null, null, null]];
+  sheet.getRange("A30:G34").format.rowHeight = 54;
+  sheet.getRange("A36:I36").values = [["项目实际运行情况（截图待补充）", null, null, null, null, null, null, null, null]];
   sheet.mergeCells("A36:I36");
   sheet.getRange("A36:I36").format = { fill: colors.navy, font: { name: font, size: 10, bold: true, color: colors.white }, verticalAlignment: "center" };
-  sheet.getRange("A37:I37").values = [["依据 docs/test_scorebook_manual_run.md 在隔离副本中手动运行并粘贴截图。本区仅记录运行冒烟证据，不替代 48 条用例执行，也不改变交付判定。", null, null, null, null, null, null, null, null]];
+  sheet.getRange("A37:I37").values = [["隔离副本 API/Vite 冒烟与核心用例已自动执行。S01 至 S06 需补贴真实运行截图；截图待办不替代用例结果，也不改变交付判定。", null, null, null, null, null, null, null, null]];
   sheet.mergeCells("A37:I37");
   sheet.getRange("A37:I37").format = { fill: colors.amber, font: { name: font, size: 9, color: colors.ink }, wrapText: true, verticalAlignment: "center", borders: { preset: "all", style: "thin", color: colors.border } };
   sheet.getRange("A37:I37").format.rowHeight = 34;
@@ -346,8 +413,8 @@ function buildRunSummary(sheet) {
   sheet.mergeCells("A39:I39");
   sheet.getRange("A39:I39").format = { fill: colors.blue, font: { name: font, size: 10, bold: true, color: colors.navy }, verticalAlignment: "center" };
   sheet.getRange("A40:I42").values = [
-    ["项目版本", "", "", "", "Git 提交", "", "", "执行人", ""],
-    ["操作系统", "", "", "", "浏览器", "", "", "执行日期", null],
+    ["项目版本", `前端 0.1.9；后端基线 ${gitBaseline.slice(0, 12)}`, "", "", "Git 提交", gitBaseline, "", "执行人", tester],
+    ["操作系统", "Windows 11 专业版", "", "", "浏览器", "HTTP/Vite 与页面导航已验；截图待贴", "", "执行日期", executionDate],
     ["后端入口", "http://127.0.0.1:16088/health", "", "", "前端入口", "http://127.0.0.1:11420", "", "数据库", "隔离副本"],
   ];
   for (const row of [40, 41, 42]) {
@@ -373,7 +440,17 @@ function buildRunSummary(sheet) {
     ["S04", "知识库列表与详情", "知识库页面可用；如创建测试知识库，只在隔离副本中执行。", "S04-repository.png"],
     ["S05", "测试资料导入与状态", "样例文件上传后可查看数据集和真实索引状态，不将失败或未就绪写成成功。", "S05-dataset.png"],
     ["S06", "搜索/问答与引用（模型可用时）", "模型和索引可用时核对命中内容及来源；依赖缺失时记录阻塞原因。", "S06-search-chat.png"],
-  ].map(([id, scenario, expected, fileName]) => [id, scenario, null, expected, null, "待人工执行", null, "", fileName]);
+  ].map(([id, scenario, expected, fileName], index) => [
+    id,
+    scenario,
+    null,
+    expected,
+    null,
+    index < 5 ? "通过" : "阻塞",
+    executionDate,
+    tester,
+    `待贴：${fileName}`,
+  ]);
   sheet.getRange("A46:I51").values = runtimeChecks;
   for (const row of [46, 47, 48, 49, 50, 51]) {
     sheet.mergeCells(`B${row}:C${row}`);
@@ -418,6 +495,91 @@ function buildRunSummary(sheet) {
   table.style = "TableStyleMedium2";
 }
 
+if (process.argv.includes("--apply-results")) {
+  const workbook = await SpreadsheetFile.importXlsx(await FileBlob.load(outputPath));
+  const coverSheet = workbook.worksheets.getItem("文件封面");
+  const testSheet = workbook.worksheets.getItem("测试项目");
+  const runSheet = workbook.worksheets.getItem("运行");
+  testSheet.getRange("H5:L52").values = executionResults.map((row) => [
+    row[1], row[0], executionDate, tester, row[3] || "",
+  ]);
+  testSheet.getRange("M5:M52").values = testCases.map((item, index) => [
+    `${item.notes}\n执行证据：${executionResults[index][2]}`,
+  ]);
+  coverSheet.getRange("B14").values = [["执行记录已回填，截图待人工补充"]];
+  coverSheet.getRange("B15").values = [["测试计划 v0.1"]];
+  coverSheet.getRange("B18").values = [["14 通过，8 失败，26 阻塞；截图待人工补充"]];
+  coverSheet.getRange("A22").values = [["本成绩书依据需求分析、详细设计、接口设计、操作手册和测试计划整理。执行结果按实际记录；失败和阻塞项均保留现象、前置条件及缺陷编号。"]];
+  runSheet.getRange("A36").values = [["项目实际运行情况（截图待补充）"]];
+  runSheet.getRange("A37").values = [["隔离副本 API/Vite 冒烟与核心用例已自动执行。S01 至 S06 需补贴真实运行截图；截图待办不替代用例结果，也不改变交付判定。"]];
+  runSheet.getRange("B40").values = [["前端 0.1.9；后端基线 3951cd35be53"]];
+  runSheet.getRange("F40").values = [["3951cd35be531084e7ebf2f40444d77bc6dff30c"]];
+  runSheet.getRange("I40").values = [[tester]];
+  runSheet.getRange("B41").values = [["Windows 11 专业版"]];
+  runSheet.getRange("F41").values = [["HTTP/Vite 与页面导航已验；截图待贴"]];
+  runSheet.getRange("I41").values = [[executionDate]];
+  runSheet.getRange("F46:H51").values = Array.from({ length: 6 }, (_, index) => [
+    index < 5 ? "通过" : "阻塞",
+    executionDate,
+    tester,
+  ]);
+  runSheet.getRange("I46:I51").values = [
+    "待贴：S01-health.png",
+    "待贴：S02-workspace.png",
+    "待贴：S03-model-settings.png",
+    "待贴：S04-repository.png",
+    "待贴：S05-dataset.png",
+    "待贴：S06-search-chat.png",
+  ].map((fileName) => [fileName]);
+  runSheet.getRange("A30:G34").values = defects;
+  runSheet.getRange("A30:G34").format.rowHeight = 54;
+  workbook.recalculate();
+
+  const counts = executionResults.reduce((result, row) => {
+    result[row[0]] = (result[row[0]] || 0) + 1;
+    return result;
+  }, {});
+  if (counts["通过"] !== 14 || counts["失败"] !== 8 || counts["阻塞"] !== 26) {
+    throw new Error(`Unexpected execution totals: ${JSON.stringify(counts)}`);
+  }
+  const formulaErrors = await workbook.inspect({
+    kind: "match",
+    searchTerm: "#REF!|#DIV/0!|#VALUE!|#NAME\\?|#N/A|#NUM!|#NULL!|#SPILL!|#CALC!",
+    options: { useRegex: true, maxResults: 100 },
+    summary: "final formula error scan",
+  });
+  if (!formulaErrors.ndjson.includes('"matched":0') && !formulaErrors.ndjson.includes("Cell search matched 0 entries")) {
+    throw new Error(`Formula error scan failed: ${formulaErrors.ndjson}`);
+  }
+
+  const summary = await workbook.inspect({
+    kind: "table",
+    sheetId: "运行",
+    range: "A9:B19",
+    include: "values,formulas",
+    tableMaxRows: 12,
+    tableMaxCols: 4,
+    maxChars: 5000,
+  });
+  console.log(summary.ndjson);
+  console.log(formulaErrors.ndjson);
+
+  await fs.mkdir(previewDir, { recursive: true });
+  for (const [sheetName, range, fileName] of [
+    ["文件封面", "A7:G25", "文件封面-results.png"],
+    ["测试项目", "A1:M14", "测试项目-results.png"],
+    ["运行", "A9:B19", "运行-summary-results.png"],
+    ["运行", "A29:G34", "运行-defects-results.png"],
+    ["运行", "A36:I51", "运行-runtime-results.png"],
+  ]) {
+    const preview = await workbook.render({ sheetName, range, scale: 1, format: "png" });
+    await fs.writeFile(path.join(previewDir, fileName), new Uint8Array(await preview.arrayBuffer()));
+  }
+
+  const xlsx = await SpreadsheetFile.exportXlsx(workbook);
+  await xlsx.save(outputPath);
+  console.log(`Updated ${outputPath}`);
+} else {
 const workbook = Workbook.create();
 const cover = workbook.worksheets.add("文件封面");
 const tests = workbook.worksheets.add("测试项目");
@@ -462,3 +624,4 @@ console.log(summary.ndjson);
 const xlsx = await SpreadsheetFile.exportXlsx(workbook);
 await xlsx.save(outputPath);
 console.log(`Saved ${outputPath}`);
+}
