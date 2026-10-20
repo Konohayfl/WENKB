@@ -33,3 +33,4 @@
 ## 测试与验证文档
 
 - 测试计划：[docs/test_plan.md](docs/test_plan.md)
+- 测试成绩书阶段交接：[docs/test_scorebook_handoff.md](docs/test_scorebook_handoff.md)
