@@ -34,4 +34,5 @@
 
 - 测试计划：[docs/test_plan.md](docs/test_plan.md)
 - 测试成绩书阶段交接：[docs/test_scorebook_handoff.md](docs/test_scorebook_handoff.md)
+- 测试失败与阻塞跟踪：[docs/test_execution_followup.md](docs/test_execution_followup.md)
 - 测试成绩书手动运行与截图指南：[docs/test_scorebook_manual_run.md](docs/test_scorebook_manual_run.md)

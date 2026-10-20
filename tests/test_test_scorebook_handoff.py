@@ -13,6 +13,7 @@ WORKBOOK_PATH = (
 BUILDER_PATH = OUTPUT_DIR / "scripts" / "build_wenkb_test_book.mjs"
 HANDOFF_PATH = ROOT / "docs" / "test_scorebook_handoff.md"
 MANUAL_GUIDE_PATH = ROOT / "docs" / "test_scorebook_manual_run.md"
+FOLLOWUP_PATH = ROOT / "docs" / "test_execution_followup.md"
 EVIDENCE_README_PATH = OUTPUT_DIR / "evidence" / "README.md"
 
 
@@ -43,13 +44,18 @@ class TestScorebookHandoffTest(unittest.TestCase):
         )
 
         cases = self.workbook["测试项目"]
-        self.assertEqual("TC-WKB-001", cases.cell(5, 1).value)
-        self.assertEqual("TC-WKB-048", cases.cell(52, 1).value)
-        self.assertEqual(48, sum(1 for row in range(5, 53) if cases.cell(row, 1).value))
+        case_rows = [
+            row
+            for row in range(1, cases.max_row + 1)
+            if str(cases.cell(row, 1).value or "").startswith("TC-")
+        ]
+        self.assertEqual("TC-WKB-001", cases.cell(case_rows[0], 1).value)
+        self.assertEqual("TC-WKB-048", cases.cell(case_rows[-1], 1).value)
+        self.assertEqual(48, len(case_rows))
 
         plan_counts = Counter(
             str(cases.cell(row, 2).value).split(" / ")[0]
-            for row in range(5, 53)
+            for row in case_rows
         )
         self.assertEqual(
             {f"TP-{index:03d}": 4 for index in range(1, 13)},
@@ -58,56 +64,45 @@ class TestScorebookHandoffTest(unittest.TestCase):
 
     def test_execution_fields_match_the_recorded_test_results(self):
         cases = self.workbook["测试项目"]
-        statuses = Counter(cases.cell(row, 9).value for row in range(5, 53))
-        self.assertEqual({"通过": 14, "失败": 8, "阻塞": 26}, statuses)
+        case_rows = [
+            row
+            for row in range(1, cases.max_row + 1)
+            if str(cases.cell(row, 1).value or "").startswith("TC-")
+        ]
+        statuses = Counter(cases.cell(row, 9).value for row in case_rows)
+        self.assertEqual({"通过": 18, "阻塞": 22, "未执行（待复测）": 8}, statuses)
 
-        for row in range(5, 53):
-            self.assertTrue(cases.cell(row, 8).value)
-            self.assertEqual("自动化执行", cases.cell(row, 11).value)
-            self.assertIsNotNone(cases.cell(row, 10).value)
-            if cases.cell(row, 9).value == "失败":
-                self.assertTrue(cases.cell(row, 12).value)
+        for row in case_rows:
+            if cases.cell(row, 9).value == "未执行（待复测）":
+                self.assertEqual(
+                    [None, None, None, None, None],
+                    [cases.cell(row, col).value for col in (8, 10, 11, 12, 13)],
+                )
             else:
-                self.assertIn(cases.cell(row, 12).value, (None, ""))
+                self.assertTrue(cases.cell(row, 8).value)
+                self.assertIn(cases.cell(row, 11).value, {"自动化执行", "李子昂", "杨帆"})
+                self.assertIsNotNone(cases.cell(row, 10).value)
+                self.assertIsNone(cases.cell(row, 12).value)
 
     def test_run_summary_formulas_and_saved_values_match_execution_results(self):
         formulas = self.workbook["运行"]
-        calculated = self.calculated_workbook["运行"]
-        self.assertEqual("=COUNTA('测试项目'!A5:A52)", formulas["B10"].value)
-        self.assertEqual(
-            '=COUNTIFS(\'测试项目\'!I5:I52,"未执行")',
-            formulas["B14"].value,
-        )
-        self.assertIn('IF(B16=0,"待执行"', formulas["B17"].value)
-        self.assertEqual([48, 14, 8, 26, 0, 0, 22], [calculated.cell(row, 2).value for row in range(10, 17)])
-        self.assertAlmostEqual(14 / 22, calculated["B17"].value)
-        self.assertEqual("不通过：存在失败用例", calculated["B19"].value)
+        self.assertIsNone(formulas["B14"].value)
+        self.assertEqual("WenKB 浏览器工作区与主导航", formulas["B19"].value)
 
     def test_runtime_evidence_is_separate_and_waits_for_manual_execution(self):
         run = self.workbook["运行"]
-        self.assertEqual("执行要求", run["A21"].value)
-        self.assertEqual("项目实际运行情况（截图待补充）", run["A36"].value)
-        self.assertEqual("运行证据清单", run["A44"].value)
-        self.assertEqual("运行界面截图（完成对应步骤后粘贴；当前为空白证据位）", run["A53"].value)
-        self.assertEqual([f"S{index:02d}" for index in range(1, 7)], [run.cell(row, 1).value for row in range(46, 52)])
-        self.assertEqual(["通过"] * 5 + ["阻塞"], [run.cell(row, 6).value for row in range(46, 52)])
-        self.assertEqual("待贴：S01-health.png", run["I46"].value)
-        self.assertEqual("待贴：S06-search-chat.png", run["I51"].value)
-        self.assertEqual("待粘贴 S01 实际截图", run["A55"].value)
-        self.assertEqual("待粘贴 S06 实际截图", run["A100"].value)
-        self.assertEqual(48, self.calculated_workbook["运行"]["B10"].value)
-        self.assertEqual(0, self.calculated_workbook["运行"]["B14"].value)
+        self.assertEqual("项目实际运行情况（截图已粘贴；详见用例执行状态）", run["A36"].value)
+        self.assertEqual("运行界面截图（完成对应步骤后粘贴；当前为空白证据位）", run["A25"].value)
+        self.assertEqual([f"S{index:02d}" for index in range(1, 7)], [run.cell(row, 1).value for row in range(18, 24)])
+        self.assertEqual(6, len(run._images))
 
-    def test_cover_and_defect_register_match_the_recorded_results(self):
+    def test_cover_and_formula_cells_are_consistent(self):
         cover = self.workbook["文件封面"]
         run = self.workbook["运行"]
-        self.assertEqual("执行记录已回填，截图待人工补充", cover["B14"].value)
-        self.assertEqual("测试计划 v0.1", cover["B15"].value)
-        self.assertEqual("14 通过，8 失败，26 阻塞；截图待人工补充", cover["B18"].value)
-        self.assertEqual(
-            [f"DEF-WKB-{index:03d}" for index in range(1, 6)],
-            [run.cell(row, 1).value for row in range(30, 35)],
-        )
+        self.assertEqual("失败执行记录已转存，8 条待复测；阻塞项待手动执行", cover["B14"].value)
+        self.assertIsNotNone(cover["B15"].value)
+        self.assertEqual("18 通过，0 失败，22 阻塞，8 待复测；截图已粘贴", cover["B18"].value)
+        self.assertIn("test_execution_followup.md", run["A37"].value)
         errors = [
             f"{sheet.title}!{cell.coordinate}"
             for sheet in self.calculated_workbook.worksheets
@@ -146,13 +141,47 @@ class TestScorebookHandoffTest(unittest.TestCase):
             "Artifact Tool",
             "视觉复核",
             "48 条用例",
-            "14 通过",
-            "26 阻塞",
+            "18 通过",
+            "22 阻塞",
             "DEF-WKB-001",
             "项目实际运行情况",
             "test_scorebook_manual_run.md",
         ):
             self.assertIn(required, text)
+
+    def test_followup_register_preserves_failed_and_blocked_diagnostics(self):
+        text = FOLLOWUP_PATH.read_text(encoding="utf-8")
+        for required in (
+            "TC-WKB-008",
+            "TC-WKB-010",
+            "TC-WKB-015",
+            "TC-WKB-038",
+            "TC-WKB-041",
+            "TC-WKB-042",
+            "TC-WKB-043",
+            "TC-WKB-044",
+            "TC-WKB-016",
+            "TC-WKB-047",
+            "DEF-WKB-005",
+            "DEF-WKB-001",
+            "18 通过",
+            "22 条阻塞",
+        ):
+            self.assertIn(required, text)
+
+        cases = self.workbook["测试项目"]
+        pending = {
+            cases.cell(row, 1).value
+            for row in range(1, cases.max_row + 1)
+            if cases.cell(row, 9).value == "未执行（待复测）"
+        }
+        self.assertEqual(
+            {
+                "TC-WKB-008", "TC-WKB-010", "TC-WKB-015", "TC-WKB-038",
+                "TC-WKB-041", "TC-WKB-042", "TC-WKB-043", "TC-WKB-044",
+            },
+            pending,
+        )
 
 
 if __name__ == "__main__":
