@@ -171,7 +171,7 @@
         </p>
         <n-scrollbar ref="scrollbarRef" class="list">
           <n-list hoverable clickable :show-divider="false">
-            <n-list-item v-for="(result, index) in resultList" :key="result.id + '-' + index" @click="copyToClipboard(result.content)">
+            <n-list-item v-for="(result, index) in resultList" :key="result.id + '-' + index" @click="onResultClick(result)">
               <n-thing title="">
                 <template #header>
                   <n-space size="small">
@@ -212,7 +212,6 @@
   import { defineComponent, ref, getCurrentInstance, computed, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import { useDialog, useMessage } from 'naive-ui'
-  import _ from 'lodash'
   import { renderIconfontIcon, dialogConfirm } from '@/libs/utils'
   import { localRead, localSave } from '@/libs/tools'
   import { CURRENT_REPOS_ID_KEY } from '@/libs/enum'
@@ -330,14 +329,19 @@
           }
         }
       }
-      const copyToClipboard = _.debounce(async (text) => {
-        try {
-          await navigator.clipboard.writeText(text.replace(/<br>/g, '\n'))
-          message.success('复制成功')
-        } catch (err) {
-          console.error('复制失败', err);
+      const onResultClick = (result) => {
+        if (!result.srcId || !selectedReposId.value) {
+          return
         }
-      }, 200)
+        router.push({
+          path: '/main/repository/detail',
+          query: {
+            menu: 'dataset',
+            id: selectedReposId.value,
+            dtsetId: result.srcId
+          }
+        })
+      }
       watch(selectedReposId,(newId, oldId)=>{
         initHistList()
       })
@@ -354,7 +358,7 @@
         selectedRepos,
         reposOptions,
         selectedReposId, resultList, histList,
-        onReposSelect, onSearch, onInputKeyDown, copyToClipboard, deleteHist
+        onReposSelect, onSearch, onInputKeyDown, onResultClick, deleteHist
       }
     }
   })

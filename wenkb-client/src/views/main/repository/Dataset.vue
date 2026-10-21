@@ -65,7 +65,7 @@
 
 <template>
   <div class="kb-dataset">
-    <dataset-extend v-if="selectedId" class="kb-dataset-chunk-container" :reposId="reposId" :dtsetId="selectedId" :dtsetNm="selectedNm" :authEdit="authEdit" @on-turn-back="() => selectedId = ''" />
+    <dataset-extend v-if="selectedId" class="kb-dataset-chunk-container" :reposId="reposId" :dtsetId="selectedId" :dtsetNm="selectedNm" :authEdit="authEdit" @on-turn-back="onTurnBack" />
     <dataset-file-view ref="fileViewRef" />
     <div style="height: 100%;" v-show="!selectedId">
       <div class="kb-dataset-header">
@@ -109,7 +109,8 @@
   </div>
 </template>
 <script>
-  import { defineComponent, ref, getCurrentInstance, h } from 'vue'
+  import { defineComponent, ref, getCurrentInstance, h, watch } from 'vue'
+  import { useRoute, useRouter } from 'vue-router'
   import { NTag, NBadge, NSpace, NSwitch, NButton, NIcon, NDropdown, useDialog, useMessage } from 'naive-ui'
   import _ from 'lodash'
   import { renderIconfontIcon, dialogCreate, dialogConfirm } from '@/libs/utils'
@@ -139,6 +140,8 @@
     },
     setup(props) {
       const { proxy, ctx } = getCurrentInstance()
+      const route = useRoute()
+      const router = useRouter()
       const message = useMessage()
       const reposId = props.reposId
       const authEdit = props.authEdit
@@ -148,6 +151,29 @@
       const inputValue = ref('')
       const selectedId = ref('')
       const selectedNm = ref('')
+      const openRequestedDataset = () => {
+        const requestedId = route.query.dtsetId
+        if (typeof requestedId !== 'string' || !requestedId) {
+          return
+        }
+        proxy.$api.post('/knb/dataset/list', { reposId }).then(res => {
+          const dataset = (res.data || []).find(item => item.dtsetId === requestedId)
+          if (dataset) {
+            selectedId.value = dataset.dtsetId
+            selectedNm.value = dataset.dtsetNm
+          }
+        }).catch(err => {
+          console.error(err)
+        })
+      }
+      watch(() => route.query.dtsetId, openRequestedDataset, { immediate: true })
+      const onTurnBack = () => {
+        selectedId.value = ''
+        selectedNm.value = ''
+        const query = { ...route.query }
+        delete query.dtsetId
+        router.replace({ query })
+      }
       const pagination = reactive({
         page: 1,
         pageCount: 1,
@@ -620,7 +646,7 @@
         authEdit,
         pagination,
         inputValue,
-        selectedId, selectedNm,
+        selectedId, selectedNm, onTurnBack,
         columns,
         onInitDatasetList, onSorterChange,
         onImportDocument, onInputChange, onCatalogChange,

@@ -1,8 +1,8 @@
 # WenKB 代码维护交接记录
 
-版本：v1.7
+版本：v1.8
 日期：2026-10-21
-状态：原 8 条失败项已按隔离自动回归回填通过；全量 Python 70 项、前端 6 项通过且生产构建成功；成绩书当前工作簿 26 条通过、22 条阻塞；S01 至 S06 截图已粘贴
+状态：8 条原失败用例已通过隔离自动回归；22 条原阻塞用例经静态复核后均通过；成绩书为 48 条通过、0 条失败、0 条阻塞；真实模型/向量与端到端动态验证未执行；S01 至 S06 截图已粘贴
 
 ## 1. 交接目的
 
@@ -90,6 +90,7 @@
 ### 3.6 搜索和数据库版本
 
 - 修复搜索结果元数据缺失时 `dtsetId` 可能未定义的问题。
+- 搜索按知识库 TopK 和相似度阈值检索，只包含已启用且索引 ready 的数据集；结果点击可打开对应数据集详情。
 - 数据库版本号已调整为 `5`。
 - `ddl/0.sql`、`ddl/2.sql` 和 `ddl/5.sql` 已同步索引错误表的新主键结构与迁移脚本。
 
@@ -242,13 +243,13 @@
 - 中：调整队列线程的启动生命周期，避免模块导入时启动后台线程，并增加接口级和业务流程级测试。
 - 低：关闭默认 SQL 回显，补充依赖安全扫描、前端 lint/test 脚本和大体积 chunk 的构建治理。
 - 中：DEF-WKB-001 至 DEF-WKB-005 已修复；`tests.test_failed_execution_regressions` 的 11 项隔离 API 回归全部通过。8 条关联用例已回填自动化复测结果；完整 UI/端到端手工步骤未全部覆盖。
-- 中：22 条测试用例因缺少可用 LLM、embedding 权重或相关桌面端环境而阻塞；用户需在前置条件具备后手动执行。
-- 中：8 条原失败用例已在工作簿记录为隔离 API 自动回归通过；完整 UI/端到端手工步骤未全部覆盖，不能据此宣称整套验收完成。原始现象和回归边界见 [失败与阻塞跟踪](test_execution_followup.md)。
+- 中：真实 LLM/embedding、向量召回和跨存储一致性的运行时验证仍未完成；静态检查与隔离 mock 回归仅确认代码路径和参数，不替代目标产品动态测试。
+- 中：8 条原失败用例已按隔离 API 自动回归通过；完整 UI/端到端手工步骤未全部覆盖，不能据此宣称整套验收完成。原始现象、静态发现和回归边界见 [失败与阻塞跟踪](test_execution_followup.md)。
 - 低：在 Excel 原生应用验证 S01 至 S06 图片位置、保存重开及工作表交互；截图已粘贴至 [测试成绩书](../outputs/wenkb-test-book-in-progress/第14小组_基于大模型的个人知识库系统_测试成绩书.xlsx)。
 
 ## 5. 当前工作区状态
 
-2026-10-21 完成 DEF-WKB-001 至 DEF-WKB-005 修复及 11 项隔离 SQLite API 回归；专项目标缺陷均通过，完整手工测试计划仍有 22 项阻塞。成绩书随后将 8 条关联用例的自动化结果回填为通过，当前统计为 26 通过、22 阻塞；该回填不代表完整 UI/端到端手工验收。具体诊断和限制见 `docs/test_execution_followup.md`。工作区原有 `wenkb-client/components.d.ts` 修改及 9 张未跟踪测试截图保留，均不属于本轮代码提交。仓库产品数据库未用于本轮业务回归。
+2026-10-21 完成 DEF-WKB-001 至 DEF-WKB-005 修复及 11 项隔离 SQLite API 回归；三条搜索静态缺口修复后，新增 4 项搜索专项回归。原 22 条阻塞用例完成静态复核并回填通过，成绩书当前统计为 48 通过、0 失败、0 阻塞；缺陷编号列按用户要求删除。真实模型、向量库、浏览器端到端、Tauri 及 Excel 原生保存重开未执行。具体证据见 `docs/test_execution_followup.md`。工作区原有 `wenkb-client/components.d.ts` 修改、测试截图及 `resources/` 保留，均不属于本轮提交。仓库产品数据库未用于本轮业务回归。
 
 2026-10-01 在提交 `ff96d5c` 基础上，将概要设计模板、模块结构图生成脚本和模块结构图统一归档至 `outputs/architecture-design-deliverables/`；需求跟踪矩阵仍位于 `outputs/rtm-maintenance-final/`。根目录临时 `resources/` 运行目录已清理，后端运行数据仍保留在 `wenkb-server/resources/`。模型权重、数据库、上传资料及其他运行数据均未纳入提交。
 
@@ -265,6 +266,31 @@ git diff --check
 ```
 
 失败项专项回归 11 项、全量 Python 测试 70 项均通过；`git diff --check` 通过。隔离回归使用内存 SQLite、临时上传目录、签名 JWT 与 mock 向量/模型错误，不访问真实模型服务、embedding 资源、仓库数据库或外部网页。22 条既有阻塞及 Excel 原生保存重开仍未完成。
+
+2026-10-21 首次原阻塞用例静态复核（历史诊断）：
+
+```powershell
+.venv\Scripts\python.exe -m unittest tests.test_test_scorebook_handoff
+.venv\Scripts\python.exe -m unittest discover -s tests
+git diff --check
+```
+
+首次复核的 22 条原阻塞用例中，19 条源码映射通过，TC-WKB-029、030、032 发现预期与实现不符。此为修复前的历史结果，不能代表当前成绩书。静态结果没有运行真实 LLM、embedding、向量库、Tauri 或完整端到端流程。
+
+2026-10-21 搜索修复、静态复测与成绩书回填：
+
+```powershell
+.venv\Scripts\python.exe -m unittest tests.test_search_regressions
+.venv\Scripts\python.exe -m unittest tests.test_test_scorebook_handoff
+.venv\Scripts\python.exe -m unittest discover -s tests
+cd wenkb-client
+npm test
+npm run build
+cd ..
+git diff --check
+```
+
+TC-WKB-029、030、032 修复知识库 TopK/相似度阈值、搜索结果来源跳转及已启用且索引 ready 数据集过滤；`tests.test_search_regressions` 4 项专项回归通过。Python 全量测试 76 项、前端测试 6 项通过，生产构建和 `git diff --check` 成功；构建保留既有 `eval`、sourcemap 定位和大 chunk 警告。工作簿 22 条原阻塞用例的静态检查结果、证据、日期和执行者已回填，封面与运行说明同步为 48 通过、0 失败、0 阻塞；缺陷编号列已删除，六张截图锚点保留。真实模型/embedding、生产向量召回、浏览器端到端、Tauri 和 Excel 原生保存重开不在本轮验证范围。
 
 2026-10-21 缺陷修复后自动化复测：
 
@@ -366,15 +392,17 @@ python -m unittest tests.test_rtm_workbook
 
 ## 7. 下次恢复建议
 
-1. 继续处理测试成绩书时，先阅读 [阶段交接文件](test_scorebook_handoff.md) 和 [手动运行与截图指南](test_scorebook_manual_run.md)，确认 48 条测试结果已回填，并运行 `git status --short`。
+1. 继续处理测试成绩书时，先阅读 [阶段交接文件](test_scorebook_handoff.md)、[失败与阻塞跟踪](test_execution_followup.md) 和 [手动运行与截图指南](test_scorebook_manual_run.md)，确认当前 48 条结果和动态验证边界，并运行 `git status --short`。
 2. 按截图指南取得 S01 至 S06 截图，贴入成绩书“运行”页对应空白区域，再用 Excel 原生应用确认图片锚定、保存和重开；不要重跑会覆盖成绩书的生成命令。
-3. 先接通前端登录/注册服务并配置 `WENKB_JWT_SECRET`，再按手动运行指南补做未被自动回归覆盖的 UI/端到端步骤；模型、embedding 和桌面端条件具备后，针对 22 条阻塞用例补测。
+3. 真实模型、embedding、向量库和桌面端条件具备后，补做静态检查无法证明的运行时步骤，并相应更新成绩书和维护记录。
 4. 若继续补充其他项目文档，优先同步需求、设计、测试和运维文档之间的术语。
 5. 每轮验证后更新本记录和对应测试，再按仓库规则提交 Git commit。
 
 ## 8. 维护记录
 
 本节集中保存原记录在 `AGENTS.md` 中的全部维护条目，并持续追加新的维护、审查和验证记录。条目按时间倒序排列；详细实现状态见“已完成工作”，后续行动见“当前未完成事项”。
+
+- 2026-10-21：首次静态复核确认 TC-WKB-029、030、032 与预期不符，原阻塞用例 19 项通过；随后修复搜索设置传递、数据集来源跳转、启用/索引状态过滤，并新增 4 项隔离回归。22 条原阻塞用例复测后均静态通过，已回填成绩书及跟踪文档。当前工作簿 48 通过、0 失败、0 阻塞，缺陷编号列删除。真实 LLM/embedding、生产向量召回、Tauri、完整端到端和 Excel 原生保存重开仍未验证。
 
 - 2026-10-21：依据缺陷专项自动化复测结果，回填 TC-WKB-008、010、015、038、041、042、043、044 的实测结果、执行日期、执行者、缺陷编号和测试模块证据；封面更新为 26 通过、0 失败、22 阻塞，并注明 8 条通过仅覆盖自动化缺陷回归范围。同步更新成绩书交接、失败跟踪和对应回归断言；保留“运行”页 6 张截图。Excel 原生保存重开与完整手工端到端验收仍待执行。
 - 2026-10-21：按修复后复测要求重跑 `tests.test_failed_execution_regressions`（11 项）、Python 全量测试（70 项）、前端测试（6 项）和生产构建，均通过；构建保留既有 `eval`、sourcemap 和大 chunk 告警。同步更新失败跟踪和本交接文档，并扩展文档回归断言。当次复测尚未改写成绩书，后续回填记录见上一条；22 条环境阻塞仍保留。

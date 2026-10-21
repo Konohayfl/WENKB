@@ -2,13 +2,14 @@ from fastapi import FastAPI, Request
 from server.db.DbManager import session_scope
 from server.api.BaseApi import BaseApi
 from sqlalchemy import select, delete
-from server.model.orm_knb import SrchHist
-from server.model.entity_knb import SrchInfo as SrchInfoEntity, SrchHist as SrchHistEntity
+from server.model.orm_knb import SrchHist, ReposSetting, Dataset
+from server.model.entity_knb import SrchInfo as SrchInfoEntity, SrchHist as SrchHistEntity, ReposSetting as ReposSettingEntity
 from datetime import datetime
 from server.core.tools.ask_to_llm import get_related_docs_by_repos_id
 from server.utils.websocketutils import WebsocketManager
 from server.exception.exception import BaseBusiException
 from server.core.knb.ReposService import ReposService
+from config.llm import SIMILARITY_TRVAL, TOP_K
 
 class SearchApi(BaseApi):
   reposService = ReposService()
@@ -42,11 +43,29 @@ class SearchApi(BaseApi):
         with session_scope() as session:
           session.add(orm)
       
-      related_docs_with_score = get_related_docs_by_repos_id(reposId=reposId, question=srchInfo.searchTxt)
+      with session_scope(True) as session:
+        setting_orm = session.get(ReposSetting, reposId)
+        active_dataset_ids = set(session.scalars(
+          select(Dataset.dtsetId).where(
+            Dataset.reposId == reposId,
+            Dataset.enbSts == 'enb',
+            Dataset.idxSts == 'ready',
+          )
+        ).all())
+      setting = ReposSettingEntity(
+        reposId=reposId,
+        topK=(setting_orm.topK if setting_orm and setting_orm.topK and setting_orm.topK > 0 else TOP_K),
+        smlrTrval=(setting_orm.smlrTrval if setting_orm and setting_orm.smlrTrval is not None else SIMILARITY_TRVAL),
+      )
+      related_docs_with_score = get_related_docs_by_repos_id(
+        reposId=reposId,
+        question=srchInfo.searchTxt,
+        setting=setting,
+        dataset_ids=active_dataset_ids,
+      )
       data = []
-      if (related_docs_with_score is None):
+      if (not related_docs_with_score):
         return self.success(data)
-      # dtsetIds = set()
       for doc, score in related_docs_with_score:
         metadata = doc.metadata
         dtsetId = metadata.get('dtsetId')
@@ -55,7 +74,8 @@ class SearchApi(BaseApi):
           dtsetId = (source.split('/')[-1]).split('.')[0]
         if (dtsetId is None):
           continue
-        # dtsetIds.add(dtsetId)
+        if dtsetId not in active_dataset_ids or float(score) >= setting.smlrTrval:
+          continue
         data.append({
           'srcId': dtsetId, # 来源文件ID
           'score': float(score),

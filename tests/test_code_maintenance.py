@@ -293,10 +293,10 @@ class CodeMaintenanceTest(unittest.TestCase):
             "70 项全量 Python 测试通过",
             "前端测试 6 项全部通过",
             "生产构建成功",
-            "成绩书当前工作簿 26 条通过、22 条阻塞",
+            "成绩书当前统计为 48 通过、0 失败、0 阻塞",
             "WENKB_JWT_SECRET",
             "WebSocket 拒绝无效凭证",
-            "22 项阻塞",
+            "TC-WKB-029、030、032",
         ):
             self.assertIn(required, text)
 

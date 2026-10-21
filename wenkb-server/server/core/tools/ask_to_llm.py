@@ -70,14 +70,31 @@ def save_message_quotes(chatMesg: ChatMesgEntity, sources: list):
       for index, source in enumerate(sources)
     ])
 
-def get_related_docs_by_repos_id(reposId:str, question:str, setting: ReposSettingEntity = ReposSettingEntity()):
+def get_related_docs_by_repos_id(
+  reposId: str,
+  question: str,
+  setting: ReposSettingEntity = ReposSettingEntity(),
+  dataset_ids: set[str] = None,
+):
   vector_store = get_or_build_vector_db(reposId)
   if (vector_store is None):
     return None
-  return get_related_docs_with_score(vector_store=vector_store, question=question, k=setting.topK)
+  if dataset_ids is not None and len(dataset_ids) == 0:
+    return []
+  document_filter = None
+  if dataset_ids is not None:
+    document_filter = {'dtsetId': {'$in': sorted(dataset_ids)}}
+  return get_related_docs_with_score(
+    vector_store=vector_store,
+    question=question,
+    k=setting.topK,
+    filter=document_filter,
+  )
 
-def get_related_docs_with_score(vector_store, question:str, k:int = TOP_K):
-  return vector_store.similarity_search_with_score(question, k)
+def get_related_docs_with_score(vector_store, question:str, k:int = TOP_K, filter: dict = None):
+  if filter is None:
+    return vector_store.similarity_search_with_score(question, k)
+  return vector_store.similarity_search_with_score(question, k, filter=filter)
 
 def generate_llm_prompts(question: str, related_docs_with_score) -> str:
   context = '\n'.join([doc.page_content for doc, score in related_docs_with_score])
