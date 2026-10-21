@@ -70,18 +70,29 @@ class TestScorebookHandoffTest(unittest.TestCase):
             if str(cases.cell(row, 1).value or "").startswith("TC-")
         ]
         statuses = Counter(cases.cell(row, 9).value for row in case_rows)
-        self.assertEqual({"通过": 18, "阻塞": 22, "未执行（待复测）": 8}, statuses)
+        self.assertEqual({"通过": 26, "阻塞": 22}, statuses)
+
+        regression_defects = {
+            "TC-WKB-008": "DEF-WKB-005",
+            "TC-WKB-010": "DEF-WKB-002",
+            "TC-WKB-015": "DEF-WKB-003",
+            "TC-WKB-038": "DEF-WKB-004",
+            "TC-WKB-041": "DEF-WKB-001",
+            "TC-WKB-042": "DEF-WKB-001",
+            "TC-WKB-043": "DEF-WKB-001",
+            "TC-WKB-044": "DEF-WKB-001",
+        }
 
         for row in case_rows:
-            if cases.cell(row, 9).value == "未执行（待复测）":
-                self.assertEqual(
-                    [None, None, None, None, None],
-                    [cases.cell(row, col).value for col in (8, 10, 11, 12, 13)],
-                )
+            case_id = cases.cell(row, 1).value
+            self.assertTrue(cases.cell(row, 8).value)
+            self.assertIn(cases.cell(row, 11).value, {"自动化执行", "李子昂", "杨帆"})
+            self.assertIsNotNone(cases.cell(row, 10).value)
+            if case_id in regression_defects:
+                self.assertEqual("通过", cases.cell(row, 9).value)
+                self.assertEqual(regression_defects[case_id], cases.cell(row, 12).value)
+                self.assertIn("tests.test_failed_execution_regressions", cases.cell(row, 13).value)
             else:
-                self.assertTrue(cases.cell(row, 8).value)
-                self.assertIn(cases.cell(row, 11).value, {"自动化执行", "李子昂", "杨帆"})
-                self.assertIsNotNone(cases.cell(row, 10).value)
                 self.assertIsNone(cases.cell(row, 12).value)
 
     def test_run_summary_formulas_and_saved_values_match_execution_results(self):
@@ -92,6 +103,7 @@ class TestScorebookHandoffTest(unittest.TestCase):
     def test_runtime_evidence_is_separate_and_waits_for_manual_execution(self):
         run = self.workbook["运行"]
         self.assertEqual("项目实际运行情况（截图已粘贴；详见用例执行状态）", run["A36"].value)
+        self.assertIn("8 条缺陷用例已按隔离 API 自动回归结果回填通过", run["A37"].value)
         self.assertEqual("运行界面截图（完成对应步骤后粘贴；当前为空白证据位）", run["A25"].value)
         self.assertEqual([f"S{index:02d}" for index in range(1, 7)], [run.cell(row, 1).value for row in range(18, 24)])
         self.assertEqual(6, len(run._images))
@@ -99,9 +111,9 @@ class TestScorebookHandoffTest(unittest.TestCase):
     def test_cover_and_formula_cells_are_consistent(self):
         cover = self.workbook["文件封面"]
         run = self.workbook["运行"]
-        self.assertEqual("失败执行记录已转存，8 条待复测；阻塞项待手动执行", cover["B14"].value)
+        self.assertEqual("8 条缺陷用例已按自动化回归结果回填；22 条环境阻塞仍待手动执行", cover["B14"].value)
         self.assertIsNotNone(cover["B15"].value)
-        self.assertEqual("18 通过，0 失败，22 阻塞，8 待复测；截图已粘贴", cover["B18"].value)
+        self.assertEqual("26 通过，0 失败，22 阻塞；含 8 条隔离自动化回归通过，截图已粘贴", cover["B18"].value)
         self.assertIn("test_execution_followup.md", run["A37"].value)
         errors = [
             f"{sheet.title}!{cell.coordinate}"
@@ -143,7 +155,7 @@ class TestScorebookHandoffTest(unittest.TestCase):
             "Artifact Tool",
             "视觉复核",
             "48 条用例",
-            "18 通过",
+            "26 通过",
             "22 阻塞",
             "DEF-WKB-001",
             "项目实际运行情况",
@@ -166,7 +178,7 @@ class TestScorebookHandoffTest(unittest.TestCase):
             "TC-WKB-047",
             "DEF-WKB-005",
             "DEF-WKB-001",
-            "18 通过",
+            "26 通过",
             "22 条阻塞",
         ):
             self.assertIn(required, text)
@@ -177,12 +189,19 @@ class TestScorebookHandoffTest(unittest.TestCase):
             for row in range(1, cases.max_row + 1)
             if cases.cell(row, 9).value == "未执行（待复测）"
         }
+        self.assertEqual(set(), pending)
+        regression_passed = {
+            cases.cell(row, 1).value
+            for row in range(1, cases.max_row + 1)
+            if cases.cell(row, 9).value == "通过"
+            and "tests.test_failed_execution_regressions" in str(cases.cell(row, 13).value)
+        }
         self.assertEqual(
             {
                 "TC-WKB-008", "TC-WKB-010", "TC-WKB-015", "TC-WKB-038",
                 "TC-WKB-041", "TC-WKB-042", "TC-WKB-043", "TC-WKB-044",
             },
-            pending,
+            regression_passed,
         )
 
     def test_failure_retest_results_and_remaining_blockers_are_explicit(self):
@@ -194,7 +213,9 @@ class TestScorebookHandoffTest(unittest.TestCase):
             "2.2 2026-10-21 缺陷修复后自动化复测",
             "Python 全量测试",
             "6 项通过",
-            "工作簿继续保留 18 条通过、22 条阻塞、8 条未执行（待复测）",
+            "工作簿已填写对应实测结果、测试日期、执行者、缺陷编号和测试模块证据",
+            "26 条通过、22 条阻塞",
+            "不代表完整 UI、模型问答、向量一致性或端到端手工步骤均已完成",
             "WENKB_JWT_SECRET",
             "22 条阻塞仍依赖真实 LLM",
         ):
