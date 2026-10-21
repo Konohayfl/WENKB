@@ -249,7 +249,7 @@
 
 ## 5. 当前工作区状态
 
-2026-10-21 完成 DEF-WKB-001 至 DEF-WKB-005 修复及 11 项隔离 SQLite API 回归；三条搜索静态缺口修复后，新增 4 项搜索专项回归。原 22 条阻塞用例完成静态复核并回填通过，成绩书当前统计为 48 通过、0 失败、0 阻塞；缺陷编号列按用户要求删除。真实模型、向量库、浏览器端到端、Tauri 及 Excel 原生保存重开未执行。具体证据见 `docs/test_execution_followup.md`。工作区原有 `wenkb-client/components.d.ts` 修改、测试截图及 `resources/` 保留，均不属于本轮提交。仓库产品数据库未用于本轮业务回归。
+2026-10-21 完成 DEF-WKB-001 至 DEF-WKB-005 修复及 11 项隔离 SQLite API 回归；三条搜索静态缺口修复后，新增 4 项搜索专项回归。原 22 条阻塞用例完成静态复核并回填通过，成绩书当前统计为 48 通过、0 失败、0 阻塞；缺陷编号列按用户要求删除。真实模型、向量库、浏览器端到端、Tauri 及 Excel 原生保存重开未执行。具体证据见 `docs/test_execution_followup.md`。工作区原有 `wenkb-client/components.d.ts` 修改、测试成绩书、S01 至 S09 截图及根级 `resources/` 均保留，不属于本轮提交。清理了临时审阅目录 `.codex_tmp/`；仓库产品数据库未用于本轮业务回归。
 
 2026-10-01 在提交 `ff96d5c` 基础上，将概要设计模板、模块结构图生成脚本和模块结构图统一归档至 `outputs/architecture-design-deliverables/`；需求跟踪矩阵仍位于 `outputs/rtm-maintenance-final/`。根目录临时 `resources/` 运行目录已清理，后端运行数据仍保留在 `wenkb-server/resources/`。模型权重、数据库、上传资料及其他运行数据均未纳入提交。
 
@@ -401,6 +401,8 @@ python -m unittest tests.test_rtm_workbook
 ## 8. 维护记录
 
 本节集中保存原记录在 `AGENTS.md` 中的全部维护条目，并持续追加新的维护、审查和验证记录。条目按时间倒序排列；详细实现状态见“已完成工作”，后续行动见“当前未完成事项”。
+
+- 2026-10-21：整理测试完成后的项目临时文件，移除根目录 `.codex_tmp/` 中的成绩书预览、检查转储和临时 spreadsheet-runtime；在 `.gitignore` 忽略该目录，并新增 `tests.test_project_structure` 防止临时目录被误提交。更新成绩书回归断言，兼容提交版与当前本地工作簿的有效编制说明；工作簿、S01 至 S09 截图、`wenkb-client/components.d.ts` 和根级 `resources/` 均保留且未纳入本次提交。结构专项 1 项及 Python 全量测试 77 项通过，`git diff --check` 通过。
 
 - 2026-10-21：首次静态复核确认 TC-WKB-029、030、032 与预期不符，原阻塞用例 19 项通过；随后修复搜索设置传递、数据集来源跳转、启用/索引状态过滤，并新增 4 项隔离回归。22 条原阻塞用例复测后均静态通过，已回填成绩书及跟踪文档。当前工作簿 48 通过、0 失败、0 阻塞，缺陷编号列删除。真实 LLM/embedding、生产向量召回、Tauri、完整端到端和 Excel 原生保存重开仍未验证。
 

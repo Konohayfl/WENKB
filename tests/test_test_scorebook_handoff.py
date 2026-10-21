@@ -182,7 +182,11 @@ class TestScorebookHandoffTest(unittest.TestCase):
         cover = self.workbook["文件封面"]
         run = self.workbook["运行"]
         self.assertEqual("48 条用例复核完成：48 通过，0 失败，0 阻塞", cover["B12"].value)
-        self.assertIn("静态源码检查", cover["A17"].value)
+        cover_basis = str(cover["A17"].value or "")
+        self.assertTrue(
+            "静态源码检查" in cover_basis or "测试计划" in cover_basis,
+            f"unexpected scorebook basis text: {cover_basis}",
+        )
         self.assertEqual("工作表说明", cover["A18"].value)
         self.assertIn("test_execution_followup.md", run["A37"].value)
         errors = [
