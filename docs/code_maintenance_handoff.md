@@ -2,7 +2,7 @@
 
 版本：v1.7
 日期：2026-10-21
-状态：原 8 条失败项已有隔离自动回归并通过；成绩书仍保留 8 条待复测、22 条阻塞；S01 至 S06 截图已粘贴
+状态：原 8 条失败项的隔离自动回归复测通过；全量 Python 70 项、前端 6 项通过且生产构建成功；成绩书仍保留 8 条待复测、22 条阻塞；S01 至 S06 截图已粘贴
 
 ## 1. 交接目的
 
@@ -266,6 +266,20 @@ git diff --check
 
 失败项专项回归 11 项、全量 Python 测试 70 项均通过；`git diff --check` 通过。隔离回归使用内存 SQLite、临时上传目录、签名 JWT 与 mock 向量/模型错误，不访问真实模型服务、embedding 资源、仓库数据库或外部网页。22 条既有阻塞及 Excel 原生保存重开仍未完成。
 
+2026-10-21 缺陷修复后自动化复测：
+
+```powershell
+.venv\Scripts\python.exe -m unittest tests.test_failed_execution_regressions
+.venv\Scripts\python.exe -m unittest discover -s tests
+cd wenkb-client
+npm test
+npm run build
+cd ..
+git diff --check
+```
+
+本次复测结果为缺陷专项 11 项、全量 Python 测试 70 项、前端测试 6 项全部通过，生产构建成功。构建仍有 `eval`、sourcemap 定位及大于 500 KB chunk 的既有警告。成绩书未回填：8 条用例仍待手工复测，22 条仍受模型、向量索引或桌面端条件阻塞；未验证 Excel 原生保存重开。
+
 本轮已完成以下验证：
 
 2026-10-20 测试成绩书自动化执行与收尾：
@@ -362,6 +376,7 @@ python -m unittest tests.test_rtm_workbook
 
 本节集中保存原记录在 `AGENTS.md` 中的全部维护条目，并持续追加新的维护、审查和验证记录。条目按时间倒序排列；详细实现状态见“已完成工作”，后续行动见“当前未完成事项”。
 
+- 2026-10-21：按修复后复测要求重跑 `tests.test_failed_execution_regressions`（11 项）、Python 全量测试（70 项）、前端测试（6 项）和生产构建，均通过；构建保留既有 `eval`、sourcemap 和大 chunk 告警。同步更新失败跟踪和本交接文档，并扩展文档回归断言。成绩书的 8 条待复测及 22 条阻塞状态未改写。
 - 2026-10-21：依据 DEF-WKB-001 至 DEF-WKB-005 修复请求 JWT 身份识别、知识库名称必填、URL 批次校验、知识库上传文件清理和 LLM 初始化失败消息持久化；新增 `tests/test_failed_execution_regressions.py`，11 项专项与 70 项全量 Python 测试通过。更新失败跟踪与部署说明。成绩书 8 条仍保持待复测，22 条环境阻塞保留原状；关联提交 `6af673a`。
 
 - 2026-10-20：将成绩书中 8 条失败用例的执行字段清空并改为“未执行（待复测）”，保留用例定义及 22 条阻塞结果；把 8 条失败的原始观察、5 个缺陷及 22 条阻塞原因和人工复测关注点整理到 `docs/test_execution_followup.md`。封面改为当前统计 18 通过、22 阻塞、8 待复测；保留 6 张已嵌入截图。新增可重复执行的成绩书清理脚本并更新回归测试。专项测试 9 项、全量 Python 测试 57 项通过，`git diff --check` 通过。Excel 原生保存重开仍待人工确认；Git commit：`1769336`。

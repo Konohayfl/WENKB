@@ -291,6 +291,8 @@ class CodeMaintenanceTest(unittest.TestCase):
             "DEF-WKB-001 至 DEF-WKB-005 已修复",
             "tests.test_failed_execution_regressions",
             "70 项全量 Python 测试通过",
+            "前端测试 6 项全部通过",
+            "生产构建成功",
             "WENKB_JWT_SECRET",
             "WebSocket 拒绝无效凭证",
             "22 项阻塞",

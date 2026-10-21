@@ -191,6 +191,10 @@ class TestScorebookHandoffTest(unittest.TestCase):
             "2.1 2026-10-21 修复与回归",
             "tests.test_failed_execution_regressions",
             "11 项通过",
+            "2.2 2026-10-21 缺陷修复后自动化复测",
+            "Python 全量测试",
+            "6 项通过",
+            "工作簿继续保留 18 条通过、22 条阻塞、8 条未执行（待复测）",
             "WENKB_JWT_SECRET",
             "22 条阻塞仍依赖真实 LLM",
         ):
