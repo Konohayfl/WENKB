@@ -14,32 +14,36 @@ class ReadmeTest(unittest.TestCase):
             "主要能力",
             "文档入口",
             "目录说明",
-            "数据与运行约定",
             "常见问题",
         ]
         for item in required_terms:
             self.assertIn(item, text)
 
         required_links = [
-            "docs/requirements_analysis.md",
-            "docs/architecture_design.md",
-            "docs/detailed_design.md",
-            "docs/database_design.md",
-            "docs/api_design.md",
+            "AGENTS.md",
             "docs/wenkb_operation_guide.md",
             "docs/deployment_guide.md",
             "docs/test_plan.md",
-            "docs/test_scorebook_manual_run.md",
-            "docs/change_management.md",
-            "docs/code_maintenance_handoff.md",
         ]
         for item in required_links:
             self.assertIn(item, text)
 
+        self.assertNotIn("docs/requirements_analysis.md", text)
+        self.assertNotIn("docs/test_scorebook_handoff.md", text)
+
+        navigation = (root / "AGENTS.md").read_text(encoding="utf-8")
+        for item in (
+            "docs/requirements_analysis.md",
+            "docs/architecture_knowledge_qa.md",
+            "docs/test_scorebook_handoff.md",
+            "docs/test_execution_followup.md",
+            "docs/test_scorebook_manual_run.md",
+        ):
+            self.assertIn(item, navigation)
+
         required_values = [
             "16088",
             "11420",
-            "wenkb-server/resources/database/wenkb.db",
             "cd wenkb-server",
             "cd wenkb-client",
             "npm run dev",

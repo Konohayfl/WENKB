@@ -15,10 +15,11 @@ class ArchitectureDesignTest(unittest.TestCase):
             "业务流程",
             "功能需求",
             "非功能需求",
-            "后续文档规划",
+            "文档基线与维护",
         ]
         for item in req_sections:
             self.assertIn(item, req)
+        self.assertNotIn("docs/user_manual.md", req)
 
         arch_sections = [
             "设计目的",

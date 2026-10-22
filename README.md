@@ -46,17 +46,10 @@ npm run dev
 
 ## 文档入口
 
-- [需求分析](docs/requirements_analysis.md)
-- [概要设计](docs/architecture_design.md)
-- [详细设计](docs/detailed_design.md)
-- [数据库设计](docs/database_design.md)
-- [接口设计](docs/api_design.md)
-- [开发者与用户手册](docs/wenkb_operation_guide.md)
-- [部署运维](docs/deployment_guide.md)
-- [测试计划](docs/test_plan.md)
-- [测试成绩书手动运行与截图指南](docs/test_scorebook_manual_run.md)
-- [变更管理](docs/change_management.md)
-- [代码维护交接](docs/code_maintenance_handoff.md)
+- 完整文档清单与分类见 [AGENTS.md](AGENTS.md)。
+- 开发者与用户操作见 [操作手册](docs/wenkb_operation_guide.md)。
+- 部署、备份与恢复见 [部署运维指南](docs/deployment_guide.md)。
+- 测试基线见 [测试计划](docs/test_plan.md)。
 
 ## 目录说明
 
@@ -67,16 +60,6 @@ npm run dev
 | `docs` | 需求、设计、测试、运维和维护文档 |
 | `outputs` | 需求跟踪矩阵和概要设计相关交付物 |
 | `tests` | 文档测试和维护测试 |
-
-## 数据与运行约定
-
-- 默认数据库文件：`wenkb-server/resources/database/wenkb.db`
-- 默认上传目录：`wenkb-server/resources/static/upload`
-- 默认文档目录：`wenkb-server/resources/documents`
-- 默认向量库目录：`wenkb-server/resources/vector_store`
-- 后端启动时会执行数据库版本检查与初始化
-- 首次运行会自动创建所需目录和数据库文件
-- 当前以本地单机部署为主，适合本机运行和小范围验证
 
 ## 常见问题
 

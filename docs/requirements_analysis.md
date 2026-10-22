@@ -493,16 +493,6 @@ WenKB 是一款面向个人学习、研发文档管理、团队知识沉淀和�
 - 能为概要设计、详细设计、测试计划提供输入。
 - 能作为后续开发讨论和变更评审的基准文档。
 
-## 12. 后续文档规划
+## 12. 文档基线与维护
 
-建议按以下顺序继续补充标准化文档：
-
-1. `docs/requirements_analysis.md`：需求分析说明书。
-2. `docs/architecture_design.md`：概要设计说明书。
-3. `docs/detailed_design.md`：详细设计说明书。
-4. `docs/database_design.md`：数据库设计说明书。
-5. `docs/api_design.md`：接口设计说明书。
-6. `docs/test_plan.md`：测试计划与测试用例。
-7. `docs/deployment_guide.md`：部署与运维手册。
-8. `docs/user_manual.md`：用户使用手册。
-9. `docs/change_management.md`：需求变更与版本管理规范。
+需求、设计、测试、运行和变更文档的当前清单统一维护在仓库根目录 [AGENTS.md](../AGENTS.md)。本文只维护需求基线，不重复维护文档目录；需求范围变化时，再依据变更管理流程更新受影响的设计与测试文档。

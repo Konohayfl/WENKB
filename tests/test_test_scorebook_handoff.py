@@ -214,10 +214,11 @@ class TestScorebookHandoffTest(unittest.TestCase):
             "A82:I88",
             "A91:I97",
             "A100:I106",
-            "48 条",
+            "核心用例",
             "API Key",
             "WENKB_JWT_SECRET",
             "scorebook-test-user",
+            "test_scorebook_handoff.md",
         ):
             self.assertIn(required, text)
 
@@ -229,11 +230,11 @@ class TestScorebookHandoffTest(unittest.TestCase):
             "Artifact Tool",
             "视觉复核",
             "48 条用例",
-            "48 条通过",
             "0 阻塞",
-            "DEF-WKB-001",
+            "TP-001 至 TP-012",
             "项目实际运行情况",
             "test_scorebook_manual_run.md",
+            "test_execution_followup.md",
         ):
             self.assertIn(required, text)
 
