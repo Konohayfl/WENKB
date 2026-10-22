@@ -35,11 +35,15 @@ class ReadmeTest(unittest.TestCase):
         for item in (
             "docs/requirements_analysis.md",
             "docs/architecture_knowledge_qa.md",
+        ):
+            self.assertIn(item, navigation)
+
+        for retired_doc in (
             "docs/test_scorebook_handoff.md",
             "docs/test_execution_followup.md",
             "docs/test_scorebook_manual_run.md",
         ):
-            self.assertIn(item, navigation)
+            self.assertFalse((root / retired_doc).exists())
 
         required_values = [
             "16088",

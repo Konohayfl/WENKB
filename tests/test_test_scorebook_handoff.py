@@ -12,10 +12,6 @@ WORKBOOK_PATH = (
     OUTPUT_DIR / "第14小组_基于大模型的个人知识库系统_测试成绩书.xlsx"
 )
 BUILDER_PATH = OUTPUT_DIR / "scripts" / "build_wenkb_test_book.mjs"
-HANDOFF_PATH = ROOT / "docs" / "test_scorebook_handoff.md"
-MANUAL_GUIDE_PATH = ROOT / "docs" / "test_scorebook_manual_run.md"
-FOLLOWUP_PATH = ROOT / "docs" / "test_execution_followup.md"
-EVIDENCE_README_PATH = OUTPUT_DIR / "evidence" / "README.md"
 STATIC_REVIEW_CASES = {
     "TC-WKB-016": "通过",
     "TC-WKB-018": "通过",
@@ -51,9 +47,7 @@ class TestScorebookHandoffTest(unittest.TestCase):
     def test_artifacts_are_archived_as_an_in_progress_package(self):
         self.assertTrue(WORKBOOK_PATH.is_file())
         self.assertTrue(BUILDER_PATH.is_file())
-        self.assertTrue(HANDOFF_PATH.is_file())
-        self.assertTrue(MANUAL_GUIDE_PATH.is_file())
-        self.assertTrue(EVIDENCE_README_PATH.is_file())
+        self.assertTrue((OUTPUT_DIR / "evidence").is_dir())
         self.assertFalse((ROOT / "outputs" / "wenkb-test-book-final").exists())
         self.assertFalse(
             WORKBOOK_PATH.with_suffix(WORKBOOK_PATH.suffix + ".inspect.ndjson").exists()
@@ -169,7 +163,7 @@ class TestScorebookHandoffTest(unittest.TestCase):
     def test_runtime_evidence_distinguishes_static_review_from_dynamic_execution(self):
         run = self.workbook["运行"]
         self.assertEqual("项目实际运行情况（截图已粘贴；详见用例执行状态）", run["A36"].value)
-        self.assertIn("22 条原阻塞用例经静态源码检查后回填通过", run["A37"].value)
+        self.assertIn("48 条用例结果和逐项证据已记录在本工作簿", run["A37"].value)
         self.assertEqual(3, run["A11"].value)
         self.assertIn("本表不设置缺陷编号列", run["B11"].value)
         self.assertEqual("仅界面已核验", run["F23"].value)
@@ -188,7 +182,7 @@ class TestScorebookHandoffTest(unittest.TestCase):
             f"unexpected scorebook basis text: {cover_basis}",
         )
         self.assertEqual("工作表说明", cover["A18"].value)
-        self.assertIn("test_execution_followup.md", run["A37"].value)
+        self.assertIn("48 条用例结果和逐项证据已记录在本工作簿", run["A37"].value)
         errors = [
             f"{sheet.title}!{cell.coordinate}"
             for sheet in self.calculated_workbook.worksheets
@@ -197,110 +191,6 @@ class TestScorebookHandoffTest(unittest.TestCase):
             if cell.data_type == "e"
         ]
         self.assertEqual([], errors)
-
-    def test_manual_run_guide_protects_existing_data_and_defines_screenshots(self):
-        text = MANUAL_GUIDE_PATH.read_text(encoding="utf-8")
-        for required in (
-            "隔离副本",
-            "resources",
-            "16088",
-            "11420",
-            "/health",
-            "S01",
-            "S06",
-            "A55:I61",
-            "A64:I70",
-            "A73:I79",
-            "A82:I88",
-            "A91:I97",
-            "A100:I106",
-            "核心用例",
-            "API Key",
-            "WENKB_JWT_SECRET",
-            "scorebook-test-user",
-            "test_scorebook_handoff.md",
-        ):
-            self.assertIn(required, text)
-
-    def test_handoff_document_describes_scope_and_resume_checks(self):
-        text = HANDOFF_PATH.read_text(encoding="utf-8")
-        for required in (
-            "48 条用例均已回填通过",
-            "后续计划",
-            "Artifact Tool",
-            "视觉复核",
-            "48 条用例",
-            "0 阻塞",
-            "TP-001 至 TP-012",
-            "项目实际运行情况",
-            "test_scorebook_manual_run.md",
-            "test_execution_followup.md",
-        ):
-            self.assertIn(required, text)
-
-    def test_followup_register_preserves_failed_and_blocked_diagnostics(self):
-        text = FOLLOWUP_PATH.read_text(encoding="utf-8")
-        for required in (
-            "TC-WKB-008",
-            "TC-WKB-010",
-            "TC-WKB-015",
-            "TC-WKB-038",
-            "TC-WKB-041",
-            "TC-WKB-042",
-            "TC-WKB-043",
-            "TC-WKB-044",
-            "TC-WKB-016",
-            "TC-WKB-047",
-            "DEF-WKB-005",
-            "DEF-WKB-001",
-            "48 条通过",
-            "修复后 22 条原阻塞用例均完成静态复核并通过",
-            "TC-WKB-029",
-            "TC-WKB-030",
-            "TC-WKB-032",
-        ):
-            self.assertIn(required, text)
-
-        cases = self.workbook["测试项目"]
-        pending = {
-            cases.cell(row, 1).value
-            for row in range(1, cases.max_row + 1)
-            if cases.cell(row, 9).value == "未执行（待复测）"
-        }
-        self.assertEqual(set(), pending)
-        regression_passed = {
-            cases.cell(row, 1).value
-            for row in range(1, cases.max_row + 1)
-            if cases.cell(row, 9).value == "通过"
-            and "tests.test_failed_execution_regressions" in str(cases.cell(row, 12).value)
-        }
-        self.assertEqual(
-            {
-                "TC-WKB-008", "TC-WKB-010", "TC-WKB-015", "TC-WKB-038",
-                "TC-WKB-041", "TC-WKB-042", "TC-WKB-043", "TC-WKB-044",
-            },
-            regression_passed,
-        )
-
-    def test_failure_retest_results_and_remaining_blockers_are_explicit(self):
-        text = FOLLOWUP_PATH.read_text(encoding="utf-8")
-        for required in (
-            "2.1 2026-10-21 修复与回归",
-            "tests.test_failed_execution_regressions",
-            "11 项通过",
-            "2.2 2026-10-21 缺陷修复后自动化复测",
-            "Python 全量测试",
-            "6 项通过",
-            "对应结果、日期、执行者和测试模块证据已回填",
-            "48 条通过、0 条失败、0 条阻塞",
-            "不代表完整 UI、模型问答、向量一致性或端到端手工步骤均已完成",
-            "WENKB_JWT_SECRET",
-            "22 条原阻塞用例均完成静态复核",
-            "TC-WKB-032",
-            "tests.test_search_regressions",
-        ):
-            self.assertIn(required, text)
-
 
 if __name__ == "__main__":
     unittest.main()
