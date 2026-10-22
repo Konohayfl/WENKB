@@ -233,6 +233,12 @@
 - 更新 `tests/test_test_scorebook_handoff.py`、测试成绩书交接和截图指南；封面及“项目实际运行情况”区改为显示执行结果和待贴截图状态。
 - 本轮未修复产品缺陷，也未验证真实模型问答、向量召回、Tauri 桌面端和 Excel 原生图片粘贴行为。
 
+### 3.27 测试专项工具与专项校验清理
+
+- 测试专项已完成，按维护决策删除成绩书生成脚本 `outputs/wenkb-test-book-in-progress/scripts/build_wenkb_test_book.mjs` 及专项工作簿校验 `tests/test_test_scorebook_handoff.py`。
+- 保留测试成绩书工作簿及 `evidence/` 截图作为本轮执行记录；长期测试基线 `docs/test_plan.md` 和产品回归测试（包括 `tests/test_search_regressions.py`）继续维护。
+- 2026-10-22 完成清理并验证后提交；历史验证记录中针对已删除脚本/测试的命令仅说明当时状态，不代表当前可运行命令。
+
 ## 4. 当前未完成事项
 
 以下事项尚未在本轮实现，按风险优先级排列：
@@ -247,6 +253,8 @@
 
 2026-10-21 完成 DEF-WKB-001 至 DEF-WKB-005 修复及 11 项隔离 SQLite API 回归；三条搜索静态缺口修复后，新增 4 项搜索专项回归。原 22 条阻塞用例完成静态复核并回填通过，成绩书统计为 48 通过、0 失败、0 阻塞；缺陷编号列按用户要求删除。详细执行结果保留在项目工作簿。工作区原有 `wenkb-client/components.d.ts` 修改、测试成绩书、S01 至 S09 截图及根级 `resources/` 均保留，不属于当时提交。清理了临时审阅目录 `.codex_tmp/`；仓库产品数据库未用于该轮业务回归。
 
+2026-10-22 按测试专项完成后的清理决策，删除成绩书生成脚本和专用工作簿校验测试；成绩书工作簿与 `evidence/` 截图继续保留。原工作簿测试中的产品搜索实现断言由 `tests/test_search_regressions.py` 独立覆盖。
+
 2026-10-01 在提交 `ff96d5c` 基础上，将概要设计模板、模块结构图生成脚本和模块结构图统一归档至 `outputs/architecture-design-deliverables/`；需求跟踪矩阵仍位于 `outputs/rtm-maintenance-final/`。根目录临时 `resources/` 运行目录已清理，后端运行数据仍保留在 `wenkb-server/resources/`。模型权重、数据库、上传资料及其他运行数据均未纳入提交。
 
 本机已配置 `.venv` 与 `wenkb-client/node_modules`；前端开发地址为 `http://127.0.0.1:11420/`，后端健康检查为 `http://127.0.0.1:16088/health`。后台预览进程只用于本地验收，不属于提交内容。
@@ -254,6 +262,8 @@
 ## 6. 验证状态
 
 2026-10-22 测试专项文档归档移除验证：相关专项 21 项、Python 全量测试 73 项、前端测试 6 项全部通过；`git diff --check` 通过。测试成绩书工作簿结构和状态回归通过。
+
+2026-10-22 测试成绩书生成工具与专用校验清理：Python 全量测试 65 项、搜索回归 4 项全部通过；`git diff --check` 通过。工作簿及截图未删除。已删除成绩书专项测试，因此不再进行该工作簿结构/状态的自动校验；真实模型/embedding 和 Excel 原生保存重开仍未验证。
 
 2026-10-21 失败项修复与全量 Python 回归：
 
@@ -275,7 +285,7 @@ git diff --check
 
 首次复核的 22 条原阻塞用例中，19 条源码映射通过，TC-WKB-029、030、032 发现预期与实现不符。此为修复前的历史结果，不能代表当前成绩书。静态结果没有运行真实 LLM、embedding、向量库、Tauri 或完整端到端流程。
 
-2026-10-21 搜索修复、静态复测与成绩书回填：
+2026-10-21 搜索修复、静态复测与成绩书回填（历史专项测试记录；该成绩书校验测试现已按 3.27 清理）：
 
 ```powershell
 .venv\Scripts\python.exe -m unittest tests.test_search_regressions
