@@ -10,7 +10,8 @@ venv/
 # Runtime data and logs
 *.log
 wenkb-server/resources/logs/
-wenkb-server/resources/database/
+wenkb-server/resources/database/*
+!wenkb-server/resources/database/wenkb.db
 wenkb-server/resources/static/upload/
 wenkb-server/resources/vector_store/
 wenkb-server/resources/model/m3e/m3e-small/pytorch_model.bin

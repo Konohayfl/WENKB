@@ -1,8 +1,34 @@
 from pathlib import Path
+import sqlite3
 import unittest
 
 
 class DatabaseDesignTest(unittest.TestCase):
+    def test_versioned_runtime_database_has_current_schema_and_auth_table(self):
+        root = Path(__file__).resolve().parents[1]
+        database = root / "wenkb-server" / "resources" / "database" / "wenkb.db"
+        self.assertTrue(database.is_file())
+
+        with sqlite3.connect(database) as connection:
+            version = connection.execute(
+                "SELECT version FROM t_sys_schema_version"
+            ).fetchone()
+            self.assertEqual(version, (6,))
+            tables = {
+                row[0]
+                for row in connection.execute(
+                    "SELECT name FROM sqlite_master WHERE type = 'table'"
+                )
+            }
+            self.assertIn("t_sys_user", tables)
+            indexes = {
+                row[0]
+                for row in connection.execute(
+                    "SELECT name FROM sqlite_master WHERE type = 'index'"
+                )
+            }
+            self.assertIn("uq_sys_user_username", indexes)
+
     def test_database_design_doc_exists_and_covers_core_domains(self):
         root = Path(__file__).resolve().parents[1]
         doc = root / "docs" / "database_design.md"
