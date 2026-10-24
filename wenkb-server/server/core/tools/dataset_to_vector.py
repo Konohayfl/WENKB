@@ -4,7 +4,8 @@ import uuid
 from logger import logger
 from sqlalchemy import insert
 from server.db.DbManager import session_scope
-from langchain_community.document_loaders import TextLoader, PyPDFLoader, UnstructuredWordDocumentLoader, UnstructuredPowerPointLoader
+from langchain_community.document_loaders import PyPDFLoader, UnstructuredWordDocumentLoader, UnstructuredPowerPointLoader
+from langchain_core.documents import Document
 from langchain_text_splitters.html import HTMLHeaderTextSplitter
 from langchain_text_splitters.markdown import MarkdownTextSplitter
 from text_splitter.chinese_recursive_text_splitter import ChineseRecursiveTextSplitter
@@ -25,6 +26,28 @@ os.environ['CUDA_LAUNCH_BLOCKING'] = '1' # 打印详细的cuda错误日志
 
 CHUNK_SIZE = 1024
 CHUNK_OVERLAP = 200
+
+def load_text_document(file_path: str) -> Document:
+  with open(file_path, 'rb') as file:
+    content = file.read()
+
+  if content.startswith((b'\xff\xfe\x00\x00', b'\x00\x00\xfe\xff')):
+    encodings = ('utf-32',)
+  elif content.startswith((b'\xff\xfe', b'\xfe\xff')):
+    encodings = ('utf-16',)
+  elif content.startswith(b'\xef\xbb\xbf'):
+    encodings = ('utf-8-sig',)
+  else:
+    encodings = ('utf-8', 'gb18030')
+
+  for encoding in encodings:
+    try:
+      text = content.decode(encoding)
+      return Document(page_content=text, metadata={'source': file_path})
+    except UnicodeDecodeError:
+      continue
+
+  raise ValueError(f'无法识别文本文件编码（支持 UTF-8、UTF-16、UTF-32 和 GB18030）：{file_path}')
 
 # 开始构建数据集索引
 def start_to_build_dataset_index(dataset):
@@ -99,8 +122,8 @@ def file_to_documents(doc_path: str) -> list:
   elif (is_word(doc_path)):
     loader = UnstructuredWordDocumentLoader(file_path=doc_path)
   else:
-    loader = TextLoader(doc_path, autodetect_encoding=True)
-  documents = loader.load()
+    loader = None
+  documents = [load_text_document(doc_path)] if loader is None else loader.load()
   # textsplitter = ChineseTextSplitter(pdf=pdf, sentence_size=CHUNK_SIZE)
   if (is_markdown(doc_path)):
     textsplitter = MarkdownTextSplitter(chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)

@@ -27,7 +27,7 @@ class OperationGuideTest(unittest.TestCase):
             "使用文档集",
             "用户常见问题",
             "用户使用建议",
-            "开发环境搭建视频建议",
+            "Markdown/TXT 导入后索引失败并提示编码检测异常",
         ]
         for item in required_sections:
             self.assertIn(item, text)

@@ -18,11 +18,11 @@ class DevelopmentEnvironmentSetupTest(unittest.TestCase):
             "登录、密码和模型凭据",
             "首次运行验收",
             "常见问题",
-            "开发环境搭建视频建议",
             "开发者手册",
             "用户手册",
             "后台任务与数据集状态",
             "用户常见问题",
+            "Markdown/TXT 导入后索引失败并提示编码检测异常",
         ]
         for section in required_sections:
             self.assertIn(section, text)

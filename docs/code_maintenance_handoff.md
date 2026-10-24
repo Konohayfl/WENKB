@@ -424,6 +424,8 @@ python -m unittest tests.test_rtm_workbook
 
 本节集中保存原记录在 `AGENTS.md` 中的全部维护条目，并持续追加新的维护、审查和验证记录。条目按时间倒序排列；详细实现状态见“已完成工作”，后续行动见“当前未完成事项”。
 
+- 2026-10-24：修复 Markdown/TXT 索引因文本编码自动探测接口不兼容而失败的问题。移除通用文本路径对 `TextLoader(autodetect_encoding=True)` 的依赖，按 BOM 识别 UTF-16/UTF-32，并依次使用 UTF-8、GB18030 解码；无法解码时提供明确错误。新增 UTF-8 Markdown、GB18030 Markdown 和 TXT 回归测试，更新编码故障排查说明并同步两处过期的开发指南文档断言。专项测试 3 项、Python 全量测试 84 项通过，后端 `compileall` 与 `git diff --check` 通过；失败数据集需在界面重建索引。Git commit：`a642df4`。
+
 - 2026-10-24：新增开发环境搭建与运行指南，说明本地所需软件、依赖安装、SQLite 自动迁移、前后端启动及健康检查，并区分登录密码、JWT 签名密钥和模型 API Key，补充录屏凭据防泄露要求；更新 AGENTS 文档导航并增加对应文档回归测试。专项测试 1 项、Python 全量测试 81 项通过，`git diff --check` 通过；指南和测试提交 `badf86a`。
 
 - 2026-10-24：将原开发者与用户手册的开发维护及用户操作内容并入开发环境指南，删除旧手册文件，并更新 README、AGENTS、架构问答、维护交接和文档测试。合并文档专项 4 项、Python 全量 81 项通过，`git diff --check` 通过；合并提交 `a631fa1`。
