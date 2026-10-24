@@ -160,6 +160,47 @@ class CodeMaintenanceTest(unittest.TestCase):
         self.assertIn("chat_message_quote", outputs[-1])
         self.assertEqual(session.merge.call_args.args[0].mesgCntnt, "很抱歉，似乎发生了错误")
 
+    def test_chat_history_is_used_without_a_separate_llm_rewrite_call(self):
+        from server.core.tools.ask_to_llm import ask_to_llm_stream
+        from server.model.entity_knb import ChatMesg, ReposSetting
+
+        history = [ChatMesg(crtRole="usr", mesgCntnt="解释一下向量检索")]
+        fake_client = Mock()
+        fake_client.stream.return_value = iter(["向量检索回答"])
+        setting = ReposSetting(
+            reposId="repo-1", llmTptur=0.2, maxHist=4, maxCtx=4,
+            smlrTrval=0.5, topK=4,
+        )
+        message = ChatMesg(mesgId="message-2", reposId="repo-1", chatId="chat-1")
+
+        with patch("server.core.tools.ask_to_llm.get_user_llm_client", return_value=fake_client), patch(
+            "server.core.tools.ask_to_llm.get_question_prompts_and_sources",
+            return_value=("answer prompt", []),
+        ) as retrieval, patch("server.core.tools.ask_to_llm.save_message_quotes"), patch(
+            "server.core.tools.ask_to_llm.persist_chat_message"
+        ):
+            list(ask_to_llm_stream(setting, message, "那它有什么优势？", "user-1", history))
+
+        fake_client.invoke.assert_not_called()
+        retrieval.assert_called_once_with("repo-1", "那它有什么优势？", setting, history)
+        fake_client.stream.assert_called_once_with("answer prompt")
+
+    def test_history_context_is_added_to_final_prompt(self):
+        from langchain_core.documents import Document
+        from server.core.tools.ask_to_llm import generate_llm_prompts
+        from server.model.entity_knb import ChatMesg
+
+        prompt = generate_llm_prompts(
+            "那它有什么优势？",
+            [(Document(page_content="向量检索片段", metadata={}), 0.1)],
+            [ChatMesg(crtRole="usr", mesgCntnt="解释一下向量检索")],
+        )
+
+        self.assertIn("解释一下向量检索", prompt)
+        self.assertIn("当前问题：那它有什么优势？", prompt)
+        self.assertIn("仅用于理解当前问题，不作为事实依据", prompt)
+        self.assertIn("向量检索片段", prompt)
+
     def test_quote_migration_and_schema_version_are_aligned(self):
         root = Path(__file__).resolve().parents[1]
         common = (root / "wenkb-server" / "config" / "common.py").read_text(

@@ -2,7 +2,7 @@ import json
 import uuid
 from logger import logger
 from config.llm import TOP_K
-from config.prompt import REPOSCHAT_PROMPT_TEMPLATE, REPOSHISTORY_PROMPT_TEMPLATE
+from config.prompt import REPOSCHAT_PROMPT_TEMPLATE
 from server.core.tools.repos_vector_db import get_or_build_vector_db
 from server.utils.websocketutils import WebsocketManager
 from server.model.entity_knb import ChatMesg as ChatMesgEntity, ChatMesgQuote as ChatMesgQuoteEntity, ReposSetting as ReposSettingEntity
@@ -96,11 +96,21 @@ def get_related_docs_with_score(vector_store, question:str, k:int = TOP_K, filte
     return vector_store.similarity_search_with_score(question, k)
   return vector_store.similarity_search_with_score(question, k, filter=filter)
 
-def generate_llm_prompts(question: str, related_docs_with_score) -> str:
+def format_chat_history(chat_history: list[ChatMesgEntity] = None) -> str:
+  history = []
+  for message in chat_history or []:
+    role = '用户' if message.crtRole == 'usr' else '助手'
+    history.append(f'{role}: {message.mesgCntnt}')
+  return '\n'.join(history)
+
+def generate_llm_prompts(question: str, related_docs_with_score, chat_history: list[ChatMesgEntity] = None) -> str:
   context = '\n'.join([doc.page_content for doc, score in related_docs_with_score])
+  history = format_chat_history(chat_history)
+  if history:
+    question = f'对话历史（仅用于理解当前问题，不作为事实依据）：\n{history}\n\n当前问题：{question}'
   return REPOSCHAT_PROMPT_TEMPLATE.replace('{question}', question).replace('{context}', context)
 
-def get_question_prompts_and_sources(reposId: str, question: str, setting: ReposSettingEntity):
+def get_question_prompts_and_sources(reposId: str, question: str, setting: ReposSettingEntity, chat_history: list[ChatMesgEntity] = None):
   if (question is None or question == ''):
     return None, None
   related_docs_with_score_ = get_related_docs_by_repos_id(reposId, question, setting)
@@ -110,7 +120,7 @@ def get_question_prompts_and_sources(reposId: str, question: str, setting: Repos
   # 将related_docs_with_score截取setting.maxCtx条
   related_docs_with_score = related_docs_with_score[:setting.maxCtx]
   sources = prob_related_documents_and_score(related_docs_with_score)
-  prompts = generate_llm_prompts(question, related_docs_with_score)
+  prompts = generate_llm_prompts(question, related_docs_with_score, chat_history)
   return prompts, sources
 
 def persist_chat_message(chatMesg: ChatMesgEntity, content: str):
@@ -171,31 +181,9 @@ def ask_to_llm_stream(setting: ReposSettingEntity, chatMesg: ChatMesgEntity, que
     return fallback_message
   if (len(chatHistory) > 0):
     chatHistory = chatHistory[:setting.maxHist]
-    history = []
-    for hist in chatHistory:
-      # if (hist.crtRole == 'sys'):
-      #   continue
-      role = 'Q' if hist.crtRole == 'usr' else 'A' # usr 用户, sys 系统
-      history.append(f'{role}: {hist.mesgCntnt}')
-    if (len(history) == 0):
-      history = ''
-    else:
-      history = '\n'.join(history) # 历史记录拼接
-    prompts = REPOSHISTORY_PROMPT_TEMPLATE.replace('{question}', question).replace('{history}', history)
-    question = ''
-    try:
-      question = client.invoke(prompts) # 返回的数据可能需要处理一下
-      if (type(question) != str): # langchain_core.messages.ai.AIMessage
-        question = question.content
-    except Exception as e:
-      logger.error(e)
-      yield message_error_to_json(str(e))
-      yield message_chunk_to_json(fallback_message)
-      persist_chat_message(chatMesg, fallback_message)
-      return fallback_message
   prompts, sources = None, None
   try:
-    prompts, sources = get_question_prompts_and_sources(chatMesg.reposId, question, setting)
+    prompts, sources = get_question_prompts_and_sources(chatMesg.reposId, question, setting, chatHistory)
   except Exception as e:
     logger.error(e)
     yield message_error_to_json(str(e))
