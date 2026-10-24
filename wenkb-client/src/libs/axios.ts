@@ -1,5 +1,6 @@
 import axios from 'axios'
 import useUserStore from '@/store/user'
+import { isUnauthorized } from '@/libs/auth-session.js'
 import { baseURL } from '@/config'
 
 // 设置baseUrl
@@ -40,6 +41,12 @@ axios.interceptors.response.use(
         'success': false,
         'data': null,
         'msg': data
+      }
+    }
+    if (isUnauthorized(error)) {
+      useUserStore().clearAuth()
+      if (window.location.hash !== '#/login') {
+        window.location.hash = '#/login'
       }
     }
     setTimeout(() => {

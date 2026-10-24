@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { localRead, localSave } from '@/libs/tools'
+import { clearStoredAuth } from '@/libs/auth-session.js'
 const useUserStore = defineStore('user', {
   state: () => ({
     token: localRead('token') || '', // token
@@ -21,6 +22,11 @@ const useUserStore = defineStore('user', {
     setInfo (info:Object) {
       this.info = info
       localSave('info', info)
+    },
+    clearAuth () {
+      this.token = ''
+      this.info = {}
+      clearStoredAuth()
     }
   }
 })
