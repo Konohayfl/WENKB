@@ -1,14 +1,39 @@
 import jwt
 import datetime
 import os
+import secrets
+from pathlib import Path
 
 ALGORITHM = 'HS256'
+SECRET_FILE_PATH = Path(__file__).resolve().parents[2] / 'resources' / 'jwt_secret.key'
+
+
+def ensure_secret_key():
+  secret = os.environ.get('WENKB_JWT_SECRET')
+  if secret is not None:
+    if len(secret.encode('utf-8')) < 32:
+      raise ValueError('WENKB_JWT_SECRET must contain at least 32 bytes')
+    return secret
+
+  SECRET_FILE_PATH.parent.mkdir(parents=True, exist_ok=True)
+  try:
+    with SECRET_FILE_PATH.open('x', encoding='utf-8') as secret_file:
+      secret_file.write(secrets.token_urlsafe(48))
+      secret_file.flush()
+      os.fsync(secret_file.fileno())
+  except FileExistsError:
+    pass
+
+  secret = SECRET_FILE_PATH.read_text(encoding='utf-8').strip()
+  if len(secret.encode('utf-8')) < 32:
+    raise ValueError('Stored WENKB JWT secret must contain at least 32 bytes')
+  return secret
 
 def get_secret_key():
-  secret = os.environ.get('WENKB_JWT_SECRET')
-  if secret is None or len(secret.encode('utf-8')) < 32:
+  try:
+    return ensure_secret_key()
+  except (OSError, ValueError):
     return None
-  return secret
 
 # 创建token
 def generate_token(inf:dict):

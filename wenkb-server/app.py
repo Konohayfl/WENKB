@@ -26,6 +26,7 @@ from server.core.scheduler.Scheduler import datasetToVectorQueueJob, datasetEnha
 from server.utils.websocketutils import WebsocketManager
 from server.exception.exception import golbal_exception_handlers, global_exceptions_middleware
 from server.utils.authmiddleware import identity_from_token, request_identity_middleware
+from server.utils.jwtutils import ensure_secret_key
 from config.common import DEFAULT_STATIC_DIR_NAME, DEFAULT_DOCUMENT_DIR_NAME
 
 from server.db.DbUpgrade import upgrade_db
@@ -34,6 +35,7 @@ upgrade_db()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
   logger.error('----app startup----')
+  ensure_secret_key()
   asyncio.create_task(datasetToVectorQueueJob())
   asyncio.create_task(datasetEnhanceQueueJob())
   yield

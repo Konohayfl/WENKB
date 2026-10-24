@@ -3,6 +3,7 @@ from pathlib import Path
 import site
 import sqlite3
 import sys
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -32,6 +33,7 @@ try:
     from server.model.orm_sys import UserAccount
     from server.utils.authmiddleware import request_identity_middleware
     from server.utils.jwtutils import decode_token
+    from server.utils import jwtutils
     from server.utils.secretutils import aes_encrypt
 finally:
     os.chdir(ORIGINAL_CWD)
@@ -176,6 +178,39 @@ class AuthMigrationTest(unittest.TestCase):
                 )
         finally:
             connection.close()
+
+
+class JwtSecretTest(unittest.TestCase):
+    def test_missing_environment_secret_is_generated_once_and_reused(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            secret_path = Path(temp_dir) / 'jwt_secret.key'
+            with patch.object(jwtutils, 'SECRET_FILE_PATH', secret_path), patch.dict(
+                os.environ, {}, clear=True
+            ):
+                first = jwtutils.ensure_secret_key()
+                second = jwtutils.ensure_secret_key()
+                token = jwtutils.generate_token({'id': 'test-user'})
+                identity = jwtutils.decode_token(token)
+
+            self.assertEqual(first, second)
+            self.assertEqual(first, secret_path.read_text(encoding='utf-8'))
+            self.assertGreaterEqual(len(first.encode('utf-8')), 32)
+            self.assertEqual(identity['id'], 'test-user')
+
+    def test_explicit_environment_secret_overrides_generated_file(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            secret_path = Path(temp_dir) / 'jwt_secret.key'
+            configured = 'explicit-test-secret-with-at-least-32-bytes'
+            with patch.object(jwtutils, 'SECRET_FILE_PATH', secret_path), patch.dict(
+                os.environ, {'WENKB_JWT_SECRET': configured}, clear=True
+            ):
+                self.assertEqual(configured, jwtutils.ensure_secret_key())
+            self.assertFalse(secret_path.exists())
+
+    def test_explicit_short_environment_secret_is_rejected(self):
+        with patch.dict(os.environ, {'WENKB_JWT_SECRET': 'short'}, clear=True):
+            with self.assertRaisesRegex(ValueError, 'at least 32 bytes'):
+                jwtutils.ensure_secret_key()
 
 
 if __name__ == '__main__':
