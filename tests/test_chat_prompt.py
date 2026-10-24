@@ -21,8 +21,18 @@ class ChatPromptTest(unittest.TestCase):
     def test_prompt_keeps_knowledge_answers_grounded_in_retrieval(self):
         self.assertIn("只能依据<context>中实际提供的知识片段回答", self.template)
         self.assertIn("不得用大模型已有知识补全", self.template)
-        self.assertIn("当前知识库没有提供足够依据", self.template)
+        self.assertIn("当前知识库资料不足以回答", self.template)
         self.assertIn("如果没有相关知识片段", self.template)
+
+    def test_prompt_uses_formal_guidance_when_retrieval_is_insufficient(self):
+        self.assertIn("正式、完整、礼貌的语气", self.template)
+        self.assertIn("不得只回答“我不知道”", self.template)
+        self.assertIn("因此我无法在缺乏依据的情况下给出结论", self.template)
+        self.assertIn("您可以补充相关信息，或将相关资料导入知识库后再试", self.template)
+        self.assertIn(
+            "很抱歉，当前知识库中的资料暂未提供足以回答该问题的信息",
+            self.template,
+        )
 
     def test_prompt_keeps_question_and_context_placeholders(self):
         rendered = self.template.replace("{question}", "你是谁？").replace("{context}", "")
