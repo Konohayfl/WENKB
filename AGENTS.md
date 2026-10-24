@@ -26,6 +26,7 @@ README 的文档入口指向本文件，避免维护两份完整清单。
 ## 运行与操作文档
 
 - 开发者与用户手册：[docs/wenkb_operation_guide.md](docs/wenkb_operation_guide.md)
+- 开发环境搭建与运行：[docs/development_environment_setup.md](docs/development_environment_setup.md)
 - 代码维护交接：[docs/code_maintenance_handoff.md](docs/code_maintenance_handoff.md)
 - 项目进度审查与维护历史统一记录在代码维护交接文档中；本文件只保留导航和通用协作规则。
 - 部署运维：[docs/deployment_guide.md](docs/deployment_guide.md)
