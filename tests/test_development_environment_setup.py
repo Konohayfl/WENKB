@@ -19,6 +19,10 @@ class DevelopmentEnvironmentSetupTest(unittest.TestCase):
             "首次运行验收",
             "常见问题",
             "开发环境搭建视频建议",
+            "开发者手册",
+            "用户手册",
+            "后台任务与数据集状态",
+            "用户常见问题",
         ]
         for section in required_sections:
             self.assertIn(section, text)
@@ -41,6 +45,7 @@ class DevelopmentEnvironmentSetupTest(unittest.TestCase):
             "docs/development_environment_setup.md",
             (ROOT / "AGENTS.md").read_text(encoding="utf-8"),
         )
+        self.assertFalse((ROOT / "docs" / "wenkb_operation_guide.md").exists())
 
 
 if __name__ == "__main__":

@@ -47,7 +47,7 @@ npm run dev
 ## 文档入口
 
 - 完整文档清单与分类见 [AGENTS.md](AGENTS.md)。
-- 开发者与用户操作见 [操作手册](docs/wenkb_operation_guide.md)。
+- 开发环境搭建、开发者与用户操作见[环境与使用手册](docs/development_environment_setup.md)。
 - 部署、备份与恢复见 [部署运维指南](docs/deployment_guide.md)。
 - 测试基线见 [测试计划](docs/test_plan.md)。
 

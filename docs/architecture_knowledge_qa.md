@@ -70,7 +70,7 @@
 
 ## Q1：向量索引和 embedding 模型如何协作
 
-提问日期：2026-09-04\r\n分类：概念、架构、实现\r\n关联文档：[概要设计](architecture_design.md)、[详细设计](detailed_design.md)、[数据库设计](database_design.md)、[操作手册](wenkb_operation_guide.md)；代码：[向量库适配](../wenkb-server/server/core/tools/repos_vector_db.py)、[索引构建](../wenkb-server/server/core/tools/dataset_to_vector.py)、[模型适配](../wenkb-server/server/core/tools/llm_client_tools.py)、[问答检索](../wenkb-server/server/core/tools/ask_to_llm.py)
+提问日期：2026-09-04\r\n分类：概念、架构、实现\r\n关联文档：[概要设计](architecture_design.md)、[详细设计](detailed_design.md)、[数据库设计](database_design.md)、[开发环境与使用手册](development_environment_setup.md)；代码：[向量库适配](../wenkb-server/server/core/tools/repos_vector_db.py)、[索引构建](../wenkb-server/server/core/tools/dataset_to_vector.py)、[模型适配](../wenkb-server/server/core/tools/llm_client_tools.py)、[问答检索](../wenkb-server/server/core/tools/ask_to_llm.py)
 
 #### 问题
 

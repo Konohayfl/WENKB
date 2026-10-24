@@ -21,7 +21,7 @@ class ReadmeTest(unittest.TestCase):
 
         required_links = [
             "AGENTS.md",
-            "docs/wenkb_operation_guide.md",
+            "docs/development_environment_setup.md",
             "docs/deployment_guide.md",
             "docs/test_plan.md",
         ]

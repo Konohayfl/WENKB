@@ -5,19 +5,18 @@ import unittest
 class OperationGuideTest(unittest.TestCase):
     def test_operation_guide_covers_developer_and_user_manuals(self):
         root = Path(__file__).resolve().parents[1]
-        doc = root / "docs" / "wenkb_operation_guide.md"
+        doc = root / "docs" / "development_environment_setup.md"
         text = doc.read_text(encoding="utf-8")
 
         required_sections = [
-            "开发者手册目的",
+            "开发者手册",
             "项目运行形态",
             "本地目录说明",
-            "启动流程",
-            "后台任务",
+            "后台任务与数据集状态",
             "数据与配置维护",
-            "开发验证",
+            "开发验证与交付",
             "开发者常见排查",
-            "用户手册目的",
+            "用户手册",
             "首次使用",
             "配置大模型",
             "创建知识库",
@@ -28,7 +27,7 @@ class OperationGuideTest(unittest.TestCase):
             "使用文档集",
             "用户常见问题",
             "用户使用建议",
-            "手册维护建议",
+            "开发环境搭建视频建议",
         ]
         for item in required_sections:
             self.assertIn(item, text)
@@ -46,11 +45,11 @@ class OperationGuideTest(unittest.TestCase):
             "smlrTrval",
             "引用来源",
             "局域网部署",
-            "文档转入知识库",
+            "文档内容转入知识库",
             "WENKB_JWT_SECRET",
-            "登录 JWT",
-            "注册账号",
-            "密码哈希",
+            "JWT 签名密钥",
+            "注册",
+            "PBKDF2 哈希保存密码",
         ]
         for item in required_terms:
             self.assertIn(item, text)
@@ -64,6 +63,8 @@ class OperationGuideTest(unittest.TestCase):
         ]
         for item in forbidden_markers:
             self.assertNotIn(item, text)
+
+        self.assertFalse((root / "docs" / "wenkb_operation_guide.md").exists())
 
 
 if __name__ == "__main__":
