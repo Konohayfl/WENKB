@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer
+from sqlalchemy import Column, String, Integer, UniqueConstraint
 from server.db.DbManager import Base
 
 # 模型提供方信息
@@ -96,3 +96,14 @@ class FileInfo(Base):
   md5Hex = Column(String(32), name='md5_hex')
   sha1Hex = Column(String(40), name='sha1_hex')
   fileUrl = Column(String(100), name='file_url')
+
+# Registered WenKB account. Passwords are stored only as slow hashes.
+class UserAccount(Base):
+  __tablename__ = 't_sys_user'
+  __table_args__ = (UniqueConstraint('username', name='uq_sys_user_username'),)
+  userId = Column(String(32), name='user_id', primary_key=True)
+  username = Column(String(128), name='username', nullable=False)
+  nickname = Column(String(80), name='nickname', nullable=False)
+  passwordHash = Column(String(256), name='password_hash', nullable=False)
+  status = Column(String(1), name='status', nullable=False, default='Y')
+  crtTm = Column(String(19), name='crt_tm', nullable=False)

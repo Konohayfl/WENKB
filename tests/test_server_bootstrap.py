@@ -4,6 +4,7 @@ import runpy
 import site
 import sys
 import unittest
+from unittest.mock import patch
 
 
 class ServerBootstrapTest(unittest.TestCase):
@@ -21,9 +22,21 @@ class ServerBootstrapTest(unittest.TestCase):
 
     def test_app_module_loads_from_repo_root(self):
         root = Path(__file__).resolve().parents[1]
-        app_path = root / "wenkb-server" / "app.py"
-        namespace = runpy.run_path(str(app_path), run_name="wenkb_server_app_test")
+        server_dir = root / "wenkb-server"
+        app_path = server_dir / "app.py"
+        original_cwd = Path.cwd()
+        if str(server_dir) not in sys.path:
+            sys.path.insert(0, str(server_dir))
+        os.chdir(server_dir)
+        try:
+            with patch("server.db.DbUpgrade.upgrade_db"):
+                namespace = runpy.run_path(str(app_path), run_name="wenkb_server_app_test")
+        finally:
+            os.chdir(original_cwd)
         self.assertIn("app", namespace)
+        route_paths = {route.path for route in namespace["app"].routes if hasattr(route, "path")}
+        self.assertIn("/sys/auth/login", route_paths)
+        self.assertIn("/sys/auth/regist", route_paths)
         dispatchers = [
             middleware.kwargs.get("dispatch")
             for middleware in namespace["app"].user_middleware

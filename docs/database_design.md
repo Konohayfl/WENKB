@@ -33,6 +33,7 @@
 关系型数据库保存可事务化、可查询、可审计的业务数据，包括：
 
 - 模型供应商、模型、模型参数、用户模型首选项。
+- 用户账号标识、昵称、密码哈希、启用状态和注册时间；不得保存明文密码。
 - 知识库、知识库设置、数据集目录、数据集元数据。
 - 文档分段、摘要、Q&A、三元组、索引错误。
 - 对话、消息、引用、搜索历史。
@@ -118,6 +119,8 @@ erDiagram
   SYS_MODEL ||--o{ SYS_MODEL_PARAM_VALUE : configures
   SYS_MODEL ||--o{ KNB_REPOSITORY : embeds_by
   SYS_USER_MODEL_PREFERENCE }o--|| SYS_MODEL : prefers
+  SYS_USER ||--o{ SYS_MODEL_PARAM_VALUE : owns
+  SYS_USER ||--o{ KNB_REPOSITORY : creates
 
   KNB_REPOSITORY ||--|| KNB_REPOSITORY_SETTING : owns
   KNB_REPOSITORY ||--o{ KNB_DATASET_CATALOG : contains
@@ -145,6 +148,7 @@ erDiagram
 | 业务域 | 表名 | 说明 |
 |---|---|---|
 | 系统配置 | `t_sys_schema_version` | 数据库版本记录 |
+| 用户账号 | `t_sys_user` | 登录账号与密码哈希 |
 | 系统配置 | `t_sys_file` | 文件元数据 |
 | 模型配置 | `t_sys_model_provider` | 模型供应商 |
 | 模型配置 | `t_sys_model_param_def` | 供应商或模型参数定义 |
@@ -169,6 +173,19 @@ erDiagram
 | 文档集 | `t_doc_document_version` | 文档版本 |
 
 ## 8. 系统与模型配置表
+
+### 8.0 用户账号表 `t_sys_user`
+
+| 字段 | 类型 | 约束 | 说明 |
+|---|---|---|---|
+| `user_id` | varchar(32) | PK | 服务端生成的稳定用户 ID |
+| `username` | varchar(128) | unique, not null | trim + casefold 后的登录账号 |
+| `nickname` | varchar(80) | not null | 用户展示名称 |
+| `password_hash` | varchar(256) | not null | PBKDF2-HMAC-SHA256 哈希、迭代次数及随机盐编码 |
+| `status` | char(1) | not null, default `Y` | `Y` 启用，`N` 禁用 |
+| `crt_tm` | varchar(19) | not null | 注册时间 |
+
+密码字段只存单向慢速哈希。迁移版本 6 创建本表及账号唯一索引；已有数据库文件通过版本升级脚本维护。
 
 ### 8.1 数据库版本表 `t_sys_schema_version`
 
@@ -790,6 +807,8 @@ erDiagram
 - 删除字段前应先完成数据迁移和兼容版本发布。
 - 生产数据升级前必须备份关系型数据库、向量库目录和上传文件目录。
 - 数据库版本表记录每次迁移的版本号、执行时间和说明。
+- 用户表及其索引通过 schema 版本 6 的迁移脚本创建；初次安装和从版本 5 升级均须验证账号表存在且唯一约束有效。
+- 运行数据库文件可作为部署数据备份，但不应把含真实账号或密码哈希的数据库提交到代码仓库；提交结构迁移脚本和脱敏测试夹具即可。
 
 ## 20. 验收标准
 

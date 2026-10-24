@@ -33,6 +33,7 @@ class DatabaseDesignTest(unittest.TestCase):
             "t_sys_model",
             "t_sys_model_param_value",
             "t_sys_user_model_preference",
+            "t_sys_user",
             "t_knb_repository",
             "t_knb_repository_setting",
             "t_knb_dataset",

@@ -1,5 +1,6 @@
 from pathlib import Path
 import json
+import os
 import runpy
 import sys
 import unittest
@@ -16,10 +17,17 @@ class CodeMaintenanceTest(unittest.TestCase):
 
     def test_health_endpoint_is_registered_and_reports_database(self):
         root = Path(__file__).resolve().parents[1]
-        namespace = runpy.run_path(
-            str(root / "wenkb-server" / "app.py"),
-            run_name="wenkb_server_health_test",
-        )
+        server_dir = root / "wenkb-server"
+        original_cwd = Path.cwd()
+        os.chdir(server_dir)
+        try:
+            with patch("server.db.DbUpgrade.upgrade_db"):
+                namespace = runpy.run_path(
+                    str(server_dir / "app.py"),
+                    run_name="wenkb_server_health_test",
+                )
+        finally:
+            os.chdir(original_cwd)
         routes = {
             route.path: route
             for route in namespace["app"].routes
@@ -167,7 +175,7 @@ class CodeMaintenanceTest(unittest.TestCase):
             root / "wenkb-server" / "server" / "db" / "upgrade" / "ddl" / "2.sql"
         ).read_text(encoding="utf-8")
 
-        self.assertIn("DB_SCHEMA_VERSION = 5", common)
+        self.assertIn("DB_SCHEMA_VERSION = 6", common)
         self.assertIn('ALTER TABLE "t_knb_dataset_index_error" RENAME TO "t_knb_dataset_index_error_old"', migration)
         self.assertIn('"error_id" text(32) NOT NULL', migration)
         self.assertIn("idx_knb_dataset_index_error_query", migration)
@@ -175,6 +183,11 @@ class CodeMaintenanceTest(unittest.TestCase):
         self.assertIn("idx_knb_dataset_index_error_query", fresh_install)
         self.assertIn('"error_id" text(32) NOT NULL', upgrade_baseline)
         self.assertIn("idx_knb_dataset_index_error_query", upgrade_baseline)
+        auth_migration = (
+            root / "wenkb-server" / "server" / "db" / "upgrade" / "ddl" / "6.sql"
+        ).read_text(encoding="utf-8")
+        self.assertIn('CREATE TABLE IF NOT EXISTS "t_sys_user"', auth_migration)
+        self.assertIn("uq_sys_user_username", auth_migration)
 
     def test_model_secret_encryption_round_trip_uses_valid_aes_parameters(self):
         from server.utils.secretutils import AES_IV, AES_KEY, aes_decrypt, aes_encrypt

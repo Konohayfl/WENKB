@@ -13,7 +13,15 @@ def identity_from_token(token):
 
 
 async def request_identity_middleware(request: Request, call_next):
-  if request.url.path in {'/', '/health'} or request.url.path.startswith('/static/'):
+  public_routes = {
+    ('POST', '/sys/auth/login'),
+    ('POST', '/sys/auth/regist'),
+  }
+  if (
+    request.url.path in {'/', '/health'}
+    or request.url.path.startswith('/static/')
+    or (request.method, request.url.path) in public_routes
+  ):
     request.state.user = None
     return await call_next(request)
 

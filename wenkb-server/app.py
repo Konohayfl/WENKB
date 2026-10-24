@@ -13,6 +13,7 @@ from fastapi import FastAPI, APIRouter, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 from logger import logger
 from server.api.sys.FileApi import FileApi
+from server.api.sys.AuthApi import AuthApi
 from server.api.sys.SettingApi import SettingApi
 from server.api.sys.HealthApi import HealthApi
 from server.api.knb.ReposInfoApi import ReposInfoApi
@@ -49,6 +50,7 @@ router = APIRouter()
 manager = WebsocketManager()
 
 FileApi(app)
+AuthApi(app)
 SettingApi(app)
 HealthApi(app)
 ReposInfoApi(app, manager)

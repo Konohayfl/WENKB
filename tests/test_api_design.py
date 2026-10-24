@@ -29,6 +29,8 @@ class ApiDesignTest(unittest.TestCase):
 
         required_paths = [
             "/health",
+            "/sys/auth/regist",
+            "/sys/auth/login",
             "/sys/model/prvd/list",
             "/sys/model/prvd/my/list",
             "/sys/model/prvd/param/list/{prvdId}",

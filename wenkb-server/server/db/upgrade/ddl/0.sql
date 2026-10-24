@@ -324,3 +324,16 @@ ON "t_knb_chat_quote" ("mesg_id", "quote_order");
 
 CREATE INDEX IF NOT EXISTS "idx_knb_chat_quote_dataset"
 ON "t_knb_chat_quote" ("dtset_id");
+
+CREATE TABLE IF NOT EXISTS "t_sys_user" (
+  "user_id" text(32) NOT NULL,
+  "username" varchar(128) NOT NULL,
+  "nickname" varchar(80) NOT NULL,
+  "password_hash" varchar(256) NOT NULL,
+  "status" varchar(1) NOT NULL DEFAULT 'Y',
+  "crt_tm" varchar(19) NOT NULL,
+  PRIMARY KEY ("user_id")
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "uq_sys_user_username"
+ON "t_sys_user" ("username");

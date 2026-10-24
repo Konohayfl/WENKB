@@ -1,4 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
+import { localRead } from '@/libs/tools'
 const Login = () => import('../views/Login.vue')
 const Main = () => import('../views/Main.vue')
 const Chat = () => import('../views/main/Chat.vue')
@@ -71,4 +72,10 @@ const router = createRouter({
     history: createWebHashHistory(),
     routes,
 })
+
+router.beforeEach((to) => {
+    if (to.path === '/login' || localRead('token')) return true
+    return { path: '/login', replace: true }
+})
+
 export default router
